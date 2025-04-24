@@ -21,10 +21,10 @@ ROD_LENGTH = 2
 ROD_WIDTH_X = 1
 ROD_WIDTH_Y = 0.5
 
-COMSOL_FOLDER = "./comsol/1x0.5x2block_E=1e5_nu=0.49/"
-# COMSOL_UNDEFORMED_FILENAME = COMSOL_FOLDER + "undeformed.stl"
-# COMSOL_DEFORMED_FILENAMES = ["deformed_F=500_center_distributed.txt", "deformed_F=500_midpoint.txt", "deformed_F=500_corner.txt"]
-# COMSOL_DEFORMED_FILENAMES = ["deformed_F=500_center_distributed.txt"]
+NASTRAN_FOLDER = "nastran/1x0.5_block_E=1e5_nu=0.49/"
+NASTRAN_UNDEFORMED_STL_FILENAME = NASTRAN_FOLDER + "undeformed.stl"
+NASTRAN_UNDEFORMED_CSV_FILENAME = NASTRAN_FOLDER + "undeformed.csv"
+NASTRAN_DEFORMED_CSV_FILENAMES = ["deformed_F=500.csv"]
 
 SPACING = ROD_WIDTH_X * 2
 
@@ -85,7 +85,7 @@ def plotModels(deformed_rods, undeformed_index=0):
     plotter.show()
 
 
-def plotFEM(deformed_fem_meshes):
+def plotFEM(deformed_fem_meshes, undeformed_index=0):
     plotter = pv.Plotter()
     plotter.add_text("FEM Results")
     plotter.camera.position = [0, 5*ROD_WIDTH_X*len(deformed_fem_meshes), ROD_LENGTH]
@@ -109,15 +109,20 @@ def plotModelFEM(deformed_rods, deformed_fem_meshes):
     # plot each rod
     for i,deformed_rod in enumerate(deformed_rods):
         # get mesh from Cosserat rod class
-        mesh = deformed_rod.asMesh()
+        rod_mesh = deformed_rod.asMesh()
 
         # move mesh along x-axis to be separate from other meshes
         mesh_disp = np.array([-SPACING*(num_meshes-1)/2 + SPACING*i, 0, 0])
         
-        for p in mesh.points:
+        for p in rod_mesh.points:
             p += mesh_disp
         
-        plotter.add_mesh(mesh, color=MODEL_COLOR, opacity=1, specular=1.0, smooth_shading=True, split_sharp_edges=True, show_edges=True)
+        plotter.add_mesh(rod_mesh, color=MODEL_COLOR, opacity=1, specular=1.0, smooth_shading=True, split_sharp_edges=True, show_edges=False)
+
+        edges = rod_mesh.extract_feature_edges(
+            boundary_edges=False, non_manifold_edges=False, feature_angle=30, manifold_edges=False
+        )
+        plotter.add_mesh(edges, color="k")
 
         # plot cross sections
         deformed_xsections = deformed_rod.nodeCrossSectionPolyData()
@@ -127,11 +132,11 @@ def plotModelFEM(deformed_rods, deformed_fem_meshes):
 
             plotter.add_mesh(xsection, color=MODEL_COLOR, opacity=0.7)
 
-    for i,mesh in enumerate(deformed_fem_meshes):
+    for i,fem_mesh in enumerate(deformed_fem_meshes):
     #     for p in mesh.points:
     #         p += np.array([-SPACING*(len(deformed_fem_meshes)-1)/2 + SPACING*i, 0, 0])
-        mesh.apply_translation( np.array([-SPACING*(num_meshes-1)/2 + SPACING*(len(deformed_rods) + i), 0, 0]) )
-        plotter.add_mesh(mesh, color=FEM_COLOR, opacity=1, specular=1.0, smooth_shading=True, split_sharp_edges=True, show_edges=True)
+        fem_mesh.apply_translation( np.array([-SPACING*(num_meshes-1)/2 + SPACING*(len(deformed_rods) + i), 0, 0]) )
+        plotter.add_mesh(fem_mesh, color=FEM_COLOR, opacity=1, specular=1.0, smooth_shading=True, split_sharp_edges=True, show_edges=True)
 
     plotter.add_floor()
     plotter.show()
@@ -151,44 +156,28 @@ def main():
         deformed_rods = []
         # deformed_rods.append(undeformed_rod)
         for y_force, ab_coords in zip(Y_FORCES, AB_COORDS):
+            deformed_rod2 = copy.copy(rod)
+            deformed_rod2.solveOptimizationProblemNoBendingCorrection([0,y_force,0], ab_coords)
+            deformed_rods.append(deformed_rod2)
+
+            deformed_l_rod = copy.copy(l_rod)
+            deformed_l_rod.solveOptimizationProblem([0,y_force,0], ab_coords)
+            deformed_rods.append(deformed_l_rod)
+
             deformed_rod = copy.copy(rod)
             deformed_rod.solveOptimizationProblem([0,y_force,0], ab_coords)
             deformed_rods.append(deformed_rod)
-            # deformed_l_rod = copy.copy(l_rod)
-            # deformed_l_rod.solveOptimizationProblem([0,y_force,0], ab_coords)
-            # deformed_rods.append(deformed_l_rod)
+            
+            
 
     ######################################################
     # Load FEM Results
     ######################################################
     print("Loading FEM results...")
 
-    # undeformed_fem_mesh = tm.load_mesh(COMSOL_UNDEFORMED_FILENAME)
-
-    ## HOW TO GENERATE THIS OUTPUT FILE IN COMSOL (because I couldn't figure out how to export the deformed mesh):
-    # 1. Run the FEM simulation
-    # 2. Under Results, Right click 'Export', then click 'Data'
-    # 3. Under 'Dataset', Select the solution
-    # 4. Under 'Expressions', add 3 expressions: x+u, y+v, z+w (u, v, w are the x,y,z displacements)
-    # 5. Under 'Output', change 'Geometry Level' to 'Surface' (i.e. only print data for surface nodes)
-    # 6. Choose a filename and click 'Export' at the top
-    # deformed_fem_meshes = []
-    # for filename in COMSOL_DEFORMED_FILENAMES:
-    #     full_path = COMSOL_FOLDER + filename
-    #     loaded_data = np.loadtxt(full_path, comments='%')
-    #     print(undeformed_fem_mesh.vertices.shape)
-    #     print(loaded_data.shape)
-    #     deformed_fem_mesh = utils.getDeformedMeshFromComsolData(full_path, undeformed_fem_mesh)
-    #     deformed_fem_meshes.append(deformed_fem_mesh)
-
-
-    # deformed_fem_meshes.insert(0, undeformed_fem_mesh)
-
-    deformed_fem_meshes = []
-
-    undeformed_mesh_filename = "nastran/undeformed.stl"
-    undeformed_nodes_filename = "nastran/orig_nodes.csv"
-    node_displacements_filename = "nastran/node_disp.csv"
+    undeformed_mesh_filename = "nastran/1x0.5_block_E=1e5_nu=0.49/undeformed.stl"
+    undeformed_nodes_filename = "nastran/1x0.5_block_E=1e5_nu=0.49/undeformed.csv"
+    node_displacements_filename = "nastran/1x0.5_block_E=1e5_nu=0.49/deformed_F=500.csv"
 
     ## HOW TO GENERATE THESE OUTPUT FILES IN NASTRAN (because you can't export the deformed mesh)
     # 0. Download FNO Reader (link https://forums.autodesk.com/t5/inventor-nastran-forum/read-binary-results-file-fno-with-a-program/m-p/9020216)
@@ -210,9 +199,14 @@ def main():
     #   4c. Under "Number to Output", select all rows (scroll to bottom and Shift+Click to highlight all at once) and click the "<" button
     #   4d. Select "[2] T1 TRANSLATION", "[3] T2 TRANSLATION", and "[4] T3 TRANSLATION" (using Ctrl+Click) and clikc the ">" button. There should just be these 3 outputs on the right side
     #   4e. Click "Next", enter the output filename, and click "Create the Output"
-    undeformed_mesh = tm.load_mesh(undeformed_mesh_filename)
-    deformed_mesh = utils.getDeformedMeshFromNastranData(undeformed_mesh, undeformed_nodes_filename, node_displacements_filename)
-    deformed_fem_meshes.append(deformed_mesh)
+    undeformed_fem_mesh = tm.load_mesh(NASTRAN_UNDEFORMED_STL_FILENAME)
+
+    deformed_fem_meshes = []
+    for deformed_csv in NASTRAN_DEFORMED_CSV_FILENAMES:
+        full_path = NASTRAN_FOLDER + deformed_csv
+        deformed_fem_mesh = utils.getDeformedMeshFromNastranData(undeformed_fem_mesh, NASTRAN_UNDEFORMED_CSV_FILENAME, full_path)
+        deformed_fem_meshes.append(deformed_fem_mesh)
+    
 
     # spawn separate processes, one for each plot
     process_list = []
