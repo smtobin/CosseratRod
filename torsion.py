@@ -10,22 +10,22 @@ import copy
 from enum import Enum
 from multiprocessing import Process
 
-NUM_ROD_NODES = 15
+NUM_ROD_NODES = 21
 UNDEFORMED_COLOR = [255, 0, 0]
 DEFORMED_COLOR = [0, 0, 255]
 MODEL_COLOR = [255, 130, 0]
 UNDEFORMED_COLOR = [255, 130, 0]
 ARROW_COLOR = [255, 0, 0]
 FEM_COLOR = [38, 227, 0]
-ROD_LENGTH = 2
+ROD_LENGTH = 4
 ROD_WIDTH_X = 1
-ROD_WIDTH_Y = 0.5
+ROD_WIDTH_Y = 1
 
-# NASTRAN_FOLDER = "nastran/1x0.5_block_E=1e5_nu=0.49/bending/"
-NASTRAN_FOLDER = "nastran/1x0.5_block_E=1e5_nu=0.3/"
+NASTRAN_FOLDER = "nastran/1x1x4_block_E=1e5_nu=0.49/"
 NASTRAN_UNDEFORMED_STL_FILENAME = NASTRAN_FOLDER + "undeformed.stl"
-NASTRAN_UNDEFORMED_CSV_FILENAME = NASTRAN_FOLDER + "undeformed.csv"
-NASTRAN_DEFORMED_CSV_FILENAMES = ["deformed_F=500.csv"]
+# NASTRAN_UNDEFORMED_CSV_FILENAME = NASTRAN_FOLDER + "undeformed.csv"
+# NASTRAN_DEFORMED_CSV_FILENAMES = ["deformed_M=100.stl"]
+NASTRAN_DEFORMED_STL_FILENAMES = ["deformed_M=3000.stl"]
 
 SPACING = ROD_WIDTH_X * 2
 
@@ -36,7 +36,7 @@ class FigureType(Enum):
     CROSS_SECTIONS = 3
 
 # set the types of figures to create
-FIGURE_TYPES = [FigureType.MODELS_AND_FEM, FigureType.CROSS_SECTIONS]
+FIGURE_TYPES = [FigureType.MODELS_AND_FEM]
 
 # Y_FORCES = [0, 7500, 7500, 7500]
 # AB_COORDS = [[0,0], [0,0], [0.5,0], [1,0]]
@@ -44,8 +44,8 @@ FIGURE_TYPES = [FigureType.MODELS_AND_FEM, FigureType.CROSS_SECTIONS]
 # Y_FORCES = [500, 500, 500]
 # AB_COORDS = [[0,0], [0.5, 0.5], [1.0, 1.0]]
 
-Y_FORCES = [500]
-AB_COORDS = [[0,0]]
+Z_MOMENTS = [3000]
+# XY_COORDS = [[ROD_WIDTH_X/2,0]]
 
 def plotModels(deformed_rods, undeformed_index=0):
     plotter = pv.Plotter()
@@ -108,16 +108,20 @@ def plotModelFEM(deformed_rods, undeformed_fem_mesh, deformed_fem_meshes):
     plotter.camera.position = [0, 5*ROD_WIDTH_X*len(deformed_fem_meshes), ROD_LENGTH]
 
     num_meshes = len(deformed_rods) + len(deformed_fem_meshes)
-    fem_tip_centroids = []
     for i,fem_mesh in enumerate(deformed_fem_meshes):
-        cross_section, _, _ = mesh.getCrossSectionsMesh(undeformed_fem_mesh, fem_mesh, ROD_LENGTH-1e-4)
-        fem_tip_centroids.append(cross_section.centroid(fem_mesh.vertices))
-        
+    #     for p in mesh.points:
+    #         p += np.array([-SPACING*(len(deformed_fem_meshes)-1)/2 + SPACING*i, 0, 0])
+        cross_section, undeformed_cross_section, deformed_cross_section = mesh.getCrossSectionsMesh(undeformed_fem_mesh, fem_mesh, ROD_LENGTH-1e-4)
+        [undef_origin, undef_x, undef_y] = cross_section.axes(undeformed_fem_mesh.vertices)
+        [def_origin, def_x, def_y] = cross_section.axes(fem_mesh.vertices)
+        undef_x_axis = undef_x - undef_origin
+        def_x_axis = def_x - def_origin
+        theta = np.arccos(np.dot(undef_x_axis, def_x_axis) / (np.linalg.norm(undef_x_axis) * np.linalg.norm(def_x_axis)) )
+        print(f"FEM angle change: {theta}")
         fem_mesh.apply_translation( np.array([-SPACING*(num_meshes-1)/2 + SPACING*i, 0, 0]) )
         plotter.add_mesh(fem_mesh, color=FEM_COLOR, opacity=1, specular=1.0, smooth_shading=True, split_sharp_edges=True, show_edges=True)
-        fem_tip_centroids.append
+
     # plot each rod
-    model_tip_centroids = []
     for i,deformed_rod in enumerate(deformed_rods):
         # get mesh from Cosserat rod class
         rod_mesh = deformed_rod.asMesh()
@@ -128,24 +132,26 @@ def plotModelFEM(deformed_rods, undeformed_fem_mesh, deformed_fem_meshes):
         for p in rod_mesh.points:
             p += mesh_disp
         
-        plotter.add_mesh(rod_mesh, color=MODEL_COLOR, opacity=0.7, specular=1.0, smooth_shading=True, split_sharp_edges=True, show_edges=False)
+        plotter.add_mesh(rod_mesh, color=MODEL_COLOR, opacity=0.7, specular=1.0, smooth_shading=True, split_sharp_edges=True, feature_angle=50, show_edges=False)
 
         edges = rod_mesh.extract_feature_edges(
-            boundary_edges=False, non_manifold_edges=False, feature_angle=30, manifold_edges=False
+            boundary_edges=False, non_manifold_edges=False, feature_angle=50, manifold_edges=False
         )
         plotter.add_mesh(edges, color="k")
 
         # plot cross sections
         deformed_xsections = deformed_rod.nodeCrossSectionPolyData(scale_factor=1.0)
-        for xsection in deformed_xsections[1:-1]:
+        for xsection in deformed_xsections[:-1]:
             for p in xsection.points:
                 p += mesh_disp
 
             plotter.add_mesh(xsection, color=MODEL_COLOR, opacity=1.0, show_edges=True, edge_color='k', line_width=2)
-        model_tip_centroids.append(deformed_rod.tipPosition())
 
-    print(f"Fem centroids: {fem_tip_centroids}")
-    print(f"Model centroids: {model_tip_centroids}")
+        T_tip = deformed_rod.nodeTransforms()[-1]
+        def_x_axis = T_tip[0:3,0]
+        undef_x_axis = np.array([1,0,0])
+        theta = np.arccos(np.dot(undef_x_axis, def_x_axis) / (np.linalg.norm(undef_x_axis) * np.linalg.norm(def_x_axis)) )
+        print(f"Model angle change: {theta}")
 
     plotter.add_floor()
     plotter.show()
@@ -161,23 +167,13 @@ def plotCrossSections(deformed_rods, undeformed_fem_mesh, deformed_fem_meshes):
     s_xsection = node_num * (ROD_LENGTH / (NUM_ROD_NODES-1))
 
     num_meshes = len(deformed_rods) + len(deformed_fem_meshes)
-
-    for i,fem_mesh in enumerate(deformed_fem_meshes):
-    #     for p in mesh.points:
-    #         p += np.array([-SPACING*(len(deformed_fem_meshes)-1)/2 + SPACING*i, 0, 0])
-        fem_mesh.apply_translation( np.array([-SPACING*(num_meshes-1)/2 + SPACING*i, 0, 0]) )
-
-        cross_section, _, _ = mesh.getCrossSectionsMesh(undeformed_fem_mesh, fem_mesh, s_xsection)
-        deformed_2d_cross_section = cross_section.asPolyData2D(fem_mesh.vertices)
-        plotter.add_mesh(deformed_2d_cross_section, color=FEM_COLOR, opacity=1, show_edges=True)
-
     # plot each rod
     for i,deformed_rod in enumerate(deformed_rods):
         # get mesh from Cosserat rod class
         rod_mesh = deformed_rod.asMesh()
 
         # move mesh along x-axis to be separate from other meshes
-        mesh_disp = np.array([-SPACING*(num_meshes-1)/2 + SPACING*(len(deformed_fem_meshes) + i), 0, 0])
+        mesh_disp = np.array([-SPACING*(num_meshes-1)/2 + SPACING*i, 0, 0])
         
         for p in rod_mesh.points:
             p += mesh_disp
@@ -188,6 +184,15 @@ def plotCrossSections(deformed_rods, undeformed_fem_mesh, deformed_fem_meshes):
         
         plotter.add_mesh(rod_xsection, color=MODEL_COLOR, opacity=1.0, show_edges=True)
 
+    for i,fem_mesh in enumerate(deformed_fem_meshes):
+    #     for p in mesh.points:
+    #         p += np.array([-SPACING*(len(deformed_fem_meshes)-1)/2 + SPACING*i, 0, 0])
+        fem_mesh.apply_translation( np.array([-SPACING*(num_meshes-1)/2 + SPACING*(len(deformed_rods) + i), 0, 0]) )
+
+        cross_section, _, _ = mesh.getCrossSectionsMesh(undeformed_fem_mesh, fem_mesh, s_xsection)
+        deformed_2d_cross_section = cross_section.asPolyData2D(fem_mesh.vertices)
+        plotter.add_mesh(deformed_2d_cross_section, color=FEM_COLOR, opacity=1, show_edges=True)
+
     plotter.show()
 
 def main():
@@ -196,30 +201,38 @@ def main():
     # Compute analytical model results
     ########################################################
 
+    torsional_correction = 0.141 / (1/6) # for a square cross section
+
     # rod = cosserat.CosseratRod(NUM_ROD_NODES, 2, cosserat.AnalyticalEllipseCrossSection(ROD_WIDTH_X, ROD_WIDTH_Y), 1e5, 0.49)
     if FigureType.MODELS in FIGURE_TYPES or FigureType.MODELS_AND_FEM in FIGURE_TYPES:
-        rod = cosserat.CosseratRod(NUM_ROD_NODES, 2, cosserat.AnalyticalRectCrossSection(ROD_WIDTH_X, ROD_WIDTH_Y), 1e5, 0.3)
-        l_rod = cosserat.LinearDeformationCosseratRod(NUM_ROD_NODES, 2, cosserat.AnalyticalRectCrossSection(ROD_WIDTH_X, ROD_WIDTH_Y), 1e5, 0.3)
+        rod = cosserat.CosseratRod(NUM_ROD_NODES, ROD_LENGTH, cosserat.AnalyticalRectCrossSection(ROD_WIDTH_X, ROD_WIDTH_Y), 1e5, 0.49)
+        # rod = cosserat.CosseratRod(NUM_ROD_NODES, 2, cosserat.AnalyticalEllipseCrossSection(ROD_WIDTH_X/2, ROD_WIDTH_X/2), 1e5, 0.49)
+        l_rod = cosserat.LinearDeformationCosseratRod(NUM_ROD_NODES, ROD_LENGTH, cosserat.AnalyticalRectCrossSection(ROD_WIDTH_X, ROD_WIDTH_Y), 1e5, 0.49)
         undeformed_rod = copy.copy(rod)
 
         deformed_rods = []
         # deformed_rods.append(undeformed_rod)
-        for y_force, ab_coords in zip(Y_FORCES, AB_COORDS):
-            deformed_l_rod = copy.copy(l_rod)
-            deformed_l_rod.solveOptimizationProblem([cosserat.AppliedTipForce([0,y_force,0], [0,0], True)])
-            deformed_rods.append(deformed_l_rod)
+        for z_moment in Z_MOMENTS:
+            # deformed_l_rod = copy.copy(l_rod)
+            # applied_forces = [cosserat.AppliedTipForce([0,y_force,0], [ROD_WIDTH_X/2,0], False),
+            #                   cosserat.AppliedTipForce([0,-y_force,0], [-ROD_WIDTH_X/2,0], False)]
+            # deformed_l_rod.solveOptimizationProblem(applied_forces)
+            # deformed_rods.append(deformed_l_rod)
 
-            deformed_rod = copy.copy(rod)
-            deformed_rod.solveOptimizationProblem([cosserat.AppliedTipForce([0,y_force,0], [0,0], True)])
-            deformed_rods.append(deformed_rod)
+            force = (z_moment/2) / (ROD_WIDTH_X/2)
 
-            deformed_rod3 = copy.copy(rod)
-            deformed_rod3.solveOptimizationProblemLinearized([cosserat.AppliedTipForce([0,y_force,0], [0,0], True)])
-            deformed_rods.append(deformed_rod3)
+            applied_forces = []
+            applied_moments = [cosserat.AppliedTipMoment([0,0,z_moment])]
 
             deformed_rod2 = copy.copy(rod)
-            deformed_rod2.solveOptimizationProblemLinearizedNoBendingCorrection([cosserat.AppliedTipForce([0,y_force,0], [0,0], True)])
+            deformed_rod2.solveOptimizationProblemWithMomentsAndTorsionalCorrection(applied_forces, applied_moments, torsional_correction)
             deformed_rods.append(deformed_rod2)
+
+            deformed_rod = copy.copy(rod)
+            # applied_forces = [cosserat.AppliedTipForce([0,force,0], [ROD_WIDTH_X/2,ROD_WIDTH_Y/2], True),
+            #                   cosserat.AppliedTipForce([0,-force,0], [-ROD_WIDTH_X/2,-ROD_WIDTH_Y/2], True)]
+            deformed_rod.solveOptimizationProblemWithMoments(applied_forces, applied_moments)
+            deformed_rods.append(deformed_rod)
 
             
             
@@ -253,9 +266,10 @@ def main():
     undeformed_fem_mesh = tm.load_mesh(NASTRAN_UNDEFORMED_STL_FILENAME)
 
     deformed_fem_meshes = []
-    for deformed_csv in NASTRAN_DEFORMED_CSV_FILENAMES:
+    for deformed_csv in NASTRAN_DEFORMED_STL_FILENAMES:
         full_path = NASTRAN_FOLDER + deformed_csv
-        deformed_fem_mesh = utils.getDeformedMeshFromNastranData(undeformed_fem_mesh, NASTRAN_UNDEFORMED_CSV_FILENAME, full_path)
+        # deformed_fem_mesh = utils.getDeformedMeshFromNastranData(undeformed_fem_mesh, NASTRAN_UNDEFORMED_CSV_FILENAME, full_path)
+        deformed_fem_mesh = tm.load_mesh(full_path)
         deformed_fem_meshes.append(deformed_fem_mesh)
     
 

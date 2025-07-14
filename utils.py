@@ -4,12 +4,26 @@ import copy
 
 # returns the matrix log of a SO3 rotation (i.e. maps SO3 --> so3)
 def MatLog_SO3(mat):
-    theta = np.arccos(0.5*mat.trace() - 0.5)
+    cos_theta = 0.5*mat.trace() - 0.5
+    # theta = np.acos(np.max(-1.0, np.min(1.0, cos_theta)))
+    theta = np.acos(cos_theta)
 
-    # if theta is 0, return 0
-    if np.abs(theta) < 1e-10:
-        omega = np.array([0,0,0])
-        return omega
+    K = np.array([mat[2,1]-mat[1,2], mat[0,2]-mat[2,0], mat[1,0]-mat[0,1]])
+
+    # if theta is close to 0
+    if np.abs(theta) < 1e-8:
+        return 0.5 * K
+    elif np.abs(theta - np.pi) < 1e-8:
+        # 180-degree rotation case
+        # extract rotation axis from R+I
+        max_idx = np.argmax( [mat[0,0]+1, mat[1,1]+1, mat[2,2]+1] )
+        axis = np.array( [mat[max_idx,0], mat[max_idx,1], mat[max_idx,2]] )
+        axis[max_idx] += 1
+        axis /= np.linalg.norm(axis)
+        return theta * axis
+    else:
+        # general case
+        return (0.5 * theta / np.sin(theta)) * K
 
 
     vee = Vee_SO3(mat - mat.transpose())
@@ -20,6 +34,43 @@ def MatLog_SO3(mat):
         omega = theta / (2*np.sin(theta)) * vee
     
     return omega
+
+# wlt::Matrix<T, 3, 1> Log(const wlt::Matrix<T, 3, 3>& R) {
+#     const T tr = R.trace();
+#     const T cos_theta = (tr - 1) * 0.5;
+    
+#     // Clamp cos_theta to [-1,1] to handle numerical errors
+#     T theta = std::acos(std::max(T(-1), std::min(T(1), cos_theta)));
+    
+#     // Extract skew-symmetric part
+#     wlt::Matrix<T, 3, 1> K(R(2, 1) - R(1, 2),
+#                           R(0, 2) - R(2, 0),
+#                           R(1, 0) - R(0, 1));
+    
+#     if (std::abs(theta) < T(1e-10)) {
+#         // Near identity rotation
+#         return T(0.5) * K;
+#     } else if (std::abs(theta - M_PI) < T(1e-10)) {
+#         // 180-degree rotation case
+#         // Need to extract rotation axis from R+I
+#         wlt::Matrix<T, 3, 1> axis;
+#         T max_diag = R(0,0) + 1;
+#         int max_idx = 0;
+#         for (int i = 1; i < 3; ++i) {
+#             if (R(i,i) + 1 > max_diag) {
+#                 max_diag = R(i,i) + 1;
+#                 max_idx = i;
+#             }
+#         }
+#         axis = wlt::Matrix<T, 3, 1>(R(max_idx,0), R(max_idx,1), R(max_idx,2));
+#         axis += wlt::Matrix<T, 3, 1>::Unit(max_idx);
+#         axis.normalize();
+#         return theta * axis;
+#     } else {
+#         // General case
+#         return (T(0.5) * theta / std::sin(theta)) * K;
+#     }
+# }
 
 # returns the 3x3 skew-symmetric matrix for a 3-vector
 def Skew3(v):
