@@ -1,5 +1,5 @@
 #include "../LBFGSpp/include/LBFGS.h"   // TODO: change this path
-#include "Cosserat.hpp"
+#include "CosseratRodWithCrossSectionalDeformation.hpp"
 
 #include <chrono>
 
@@ -12,10 +12,10 @@ int main()
     Real length = 3.0;
     Real E = 3e6;
     Real nu = 0.45;
-    CosseratRod<N> rod(length, circle_cross_section, E, nu);
+    CosseratRodWithCrossSectionalDeformation<N> rod(length, circle_cross_section, E, nu);
 
     Vec3r applied_tip_force(10000, 0, 0);
-    CosseratRodOptimizationFunctor<N> functor(&rod, applied_tip_force);
+    CosseratRodWithCrossSectionalDeformationOptimizationFunctor<N> functor(&rod, applied_tip_force);
 
     // Set up parameters
     LBFGSpp::LBFGSParam<Real> param;

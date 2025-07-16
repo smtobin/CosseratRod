@@ -1,6 +1,6 @@
 #include "common.hpp"
 #include "math.hpp"
-#include "Cosserat.hpp"
+#include "CosseratRodWithCrossSectionalDeformation.hpp"
 
 #define N 11
 
@@ -12,11 +12,11 @@ int main()
     Real length = 3.0;
     Real E = 3e6;
     Real nu = 0.45;
-    CosseratRod<N> rod(length, circle_cross_section, E, nu);
+    CosseratRodWithCrossSectionalDeformation<N> rod(length, circle_cross_section, E, nu);
     Real h = length / (N-1);
 
     // set some initial state
-    using State = CosseratRod<N>::State;
+    using State = CosseratRodWithCrossSectionalDeformation<N>::State;
     State state = rod.state();
 
     typename State::StrainVarVecType v1, v2, v3, u1, u2, u3;
@@ -48,8 +48,8 @@ int main()
 
     rod.setState(state);
 
-    Vec3r orig_tip_pos = CosseratRod<N>::tipPosition(h, v1, v2, v3, u1, u2, u3);
-    CosseratRod<N>::TipPositionGradientType grad = rod.tipPositionGradient();
+    Vec3r orig_tip_pos = CosseratRodWithCrossSectionalDeformation<N>::tipPosition(h, v1, v2, v3, u1, u2, u3);
+    CosseratRodWithCrossSectionalDeformation<N>::TipPositionGradientType grad = rod.tipPositionGradient();
 
     // small change in state
     State delta;
@@ -76,7 +76,7 @@ int main()
     typename State::StrainVarVecType nv1, nv2, nv3, nu1, nu2, nu3;
     nv1 = new_state.v1(); nv2 = new_state.v2(); nv3 = new_state.v3();
     nu1 = new_state.u1(); nu2 = new_state.u2(); nu3 = new_state.u3();
-    Vec3r new_tip_pos = CosseratRod<N>::tipPosition(h, nv1, nv2, nv3, nu1, nu2, nu3);
+    Vec3r new_tip_pos = CosseratRodWithCrossSectionalDeformation<N>::tipPosition(h, nv1, nv2, nv3, nu1, nu2, nu3);
 
     // get to new state from gradient
     Vec3r new_tip_pos_grad = orig_tip_pos + grad * delta.state_vec;

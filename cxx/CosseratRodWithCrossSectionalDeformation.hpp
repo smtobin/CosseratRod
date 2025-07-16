@@ -8,7 +8,7 @@
 #include <memory>
 
 template <int NumNodes_>
-class CosseratRod
+class CosseratRodWithCrossSectionalDeformation
 {
 public:
     constexpr static int NumNodes = NumNodes_;
@@ -98,7 +98,7 @@ public:
 public:
     // constructor accepts any type of cross section
     template<typename CrossSectionType_>
-    CosseratRod(Real length, const CrossSectionType_& cross_section,
+    CosseratRodWithCrossSectionalDeformation(Real length, const CrossSectionType_& cross_section,
         Real E, Real nu)
         : _length(length), _state(), _E(E), _nu(nu)
     {
@@ -172,23 +172,27 @@ public:
     Real _lam;
     Mat6r _K;
 };
-#include "Cosserat.impl.hpp"
+#include "CosseratRodWithCrossSectionalDeformation.impl.hpp"
 
+/** Functor used in the LBFGS optimization of the minimiziation energy.
+ * Given x (the state), the () operator computes f(x) and the gradient.
+ */
 template <int NumNodes_>
-class CosseratRodOptimizationFunctor
+class CosseratRodWithCrossSectionalDeformationOptimizationFunctor
 {
 public:
-    CosseratRodOptimizationFunctor(CosseratRod<NumNodes_>* rod, Vec3r applied_tip_force)
+    CosseratRodWithCrossSectionalDeformationOptimizationFunctor(CosseratRodWithCrossSectionalDeformation<NumNodes_>* rod, Vec3r applied_tip_force)
         : _rod(rod), _applied_tip_force(applied_tip_force)
     {}
 
     Real operator() (const VecXr& x, VecXr& grad)
     {
-        typename CosseratRod<NumNodes_>::State::StateVecType state = x.head<CosseratRod<NumNodes_>::State::NumStates>();
+        // convert dynamic VecXr to static StateVecType vector and set the rod's state
+        typename CosseratRodWithCrossSectionalDeformation<NumNodes_>::State::StateVecType state = x.head<CosseratRodWithCrossSectionalDeformation<NumNodes_>::State::NumStates>();
         _rod->setState(state);
 
+        // compute gradient and energy
         grad = _rod->minimizationEnergyGradient(_applied_tip_force);
-
         Real energy = _rod->minimizationEnergy(_applied_tip_force);
         // std::cout << "Energy: " << energy << std::endl;
 
@@ -196,7 +200,7 @@ public:
     }
 
 private:
-    CosseratRod<NumNodes_>* _rod;
+    CosseratRodWithCrossSectionalDeformation<NumNodes_>* _rod;
     Vec3r _applied_tip_force;
 };
 

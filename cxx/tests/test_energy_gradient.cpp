@@ -1,6 +1,6 @@
 #include "common.hpp"
 #include "math.hpp"
-#include "Cosserat.hpp"
+#include "CosseratRodWithCrossSectionalDeformation.hpp"
 
 #define N 11
 
@@ -11,10 +11,10 @@ int main()
     Real length = 3.0;
     Real E = 3e6;
     Real nu = 0.45;
-    CosseratRod<N> rod(length, circle_cross_section, E, nu);
+    CosseratRodWithCrossSectionalDeformation<N> rod(length, circle_cross_section, E, nu);
 
     // set some initial state
-    using State = CosseratRod<N>::State;
+    using State = CosseratRodWithCrossSectionalDeformation<N>::State;
     State state = rod.state();
 
     typename State::StrainVarVecType v1, v2, v3, u1, u2, u3;
@@ -48,7 +48,7 @@ int main()
 
     Vec3r applied_tip_force(1000, 2000, 2500);
     Real orig_energy = rod.minimizationEnergy(applied_tip_force);
-    CosseratRod<N>::EnergyGradientType energy_grad = rod.minimizationEnergyGradient(applied_tip_force);
+    CosseratRodWithCrossSectionalDeformation<N>::EnergyGradientType energy_grad = rod.minimizationEnergyGradient(applied_tip_force);
 
     // small change in state
     State delta;

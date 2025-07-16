@@ -1,5 +1,5 @@
 #include "common.hpp"
-#include "Cosserat.hpp"
+#include "CosseratRodWithCrossSectionalDeformation.hpp"
 
 #define NUM_NODES 11
 
@@ -10,7 +10,7 @@ int main()
     Real length = 3.0;
     Real E = 3e6;
     Real nu = 0.45;
-    CosseratRod<NUM_NODES> rod(length, circle_cross_section, E, nu);
+    CosseratRodWithCrossSectionalDeformation<NUM_NODES> rod(length, circle_cross_section, E, nu);
     std::cout << "Total energy: " << rod.minimizationEnergy(Vec3r(0,0,0)) << std::endl;
     
     return EXIT_SUCCESS;

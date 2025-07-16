@@ -2,7 +2,7 @@
 #define __COSSERAT_IMPL_HPP
 
 template <int N>
-Vec3r CosseratRod<N>::tipPosition(  Real h,
+Vec3r CosseratRodWithCrossSectionalDeformation<N>::tipPosition(  Real h,
                                     const typename State::StrainVarVecType& v1,
                                     const typename State::StrainVarVecType& v2,
                                     const typename State::StrainVarVecType& v3,
@@ -21,7 +21,7 @@ Vec3r CosseratRod<N>::tipPosition(  Real h,
 }
 
 template<int N>
-Vec3r CosseratRod<N>::tipPosition()
+Vec3r CosseratRodWithCrossSectionalDeformation<N>::tipPosition()
 {
     Real h = _length / (N-1);
     const typename State::StrainVarVecType v1 = _state.v1();
@@ -36,7 +36,7 @@ Vec3r CosseratRod<N>::tipPosition()
 }
 
 template <int N>
-Real CosseratRod<N>::minimizationEnergy(const Vec3r& applied_tip_force)
+Real CosseratRodWithCrossSectionalDeformation<N>::minimizationEnergy(const Vec3r& applied_tip_force)
 {
     Real h = _length / (N-1);
 
@@ -110,7 +110,7 @@ Real CosseratRod<N>::minimizationEnergy(const Vec3r& applied_tip_force)
 }
 
 template <int N>
-typename CosseratRod<N>::TipPositionGradientType CosseratRod<N>::tipPositionGradient()
+typename CosseratRodWithCrossSectionalDeformation<N>::TipPositionGradientType CosseratRodWithCrossSectionalDeformation<N>::tipPositionGradient()
 {
     Real h = _length / (N-1);
 
@@ -173,7 +173,7 @@ typename CosseratRod<N>::TipPositionGradientType CosseratRod<N>::tipPositionGrad
 }
 
 template <int N>
-typename CosseratRod<N>::EnergyGradientType CosseratRod<N>::minimizationEnergyGradient(const Vec3r& applied_tip_force)
+typename CosseratRodWithCrossSectionalDeformation<N>::EnergyGradientType CosseratRodWithCrossSectionalDeformation<N>::minimizationEnergyGradient(const Vec3r& applied_tip_force)
 {
     Real h = _length / (N-1);
 
