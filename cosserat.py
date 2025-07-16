@@ -974,14 +974,16 @@ class CosseratRod:
                 R = g[0:3, 0:3]
                 force = np.matmul(R, tip_force.force)   # rotate force from body coords into global frame
 
-            print(f"force position: {p}\t applied force:{force}\tdot product: {np.dot(force,p)}")
+            # print(f"force position: {p}\t applied force:{force}\tdot product: {np.dot(force,p)}")
             # print(np.dot(force,p))
             # subtract the applied force from the total internal energy
             energy -= np.dot(force, p)
 
             total_moment += np.cross(p, force)
 
-        print(f"total_moment: {total_moment}")
+        # print(f"total_moment: {total_moment}")
+        print(f"energy: {energy.item()}")
+        print(f"tip position: ({tip_pos[0]}, {tip_pos[1]}, {tip_pos[2]})")
             
         return energy.item() # use .item() to turn the 1x1 matrix into a scalar
 

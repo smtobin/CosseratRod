@@ -12,7 +12,6 @@ int main()
     Real E = 3e6;
     Real nu = 0.45;
     CosseratRod<N> rod(length, circle_cross_section, E, nu);
-    Real h = length / (N-1);
 
     // set some initial state
     using State = CosseratRod<N>::State;
@@ -48,8 +47,8 @@ int main()
     rod.setState(state);
 
     Vec3r applied_tip_force(1000, 2000, 2500);
-    Real orig_energy = CosseratRod<N>::totalEnergy(rod, applied_tip_force);
-    Eigen::Vector<Real, State::NumStates> energy_grad = CosseratRod<N>::gradEnergy(rod, applied_tip_force);
+    Real orig_energy = rod.minimizationEnergy(applied_tip_force);
+    CosseratRod<N>::EnergyGradientType energy_grad = rod.minimizationEnergyGradient(applied_tip_force);
 
     // small change in state
     State delta;
@@ -85,7 +84,7 @@ int main()
     // new state
     State new_state = state + delta;
     rod.setState(new_state);
-    Real new_energy = CosseratRod<N>::totalEnergy(rod, applied_tip_force);
+    Real new_energy = rod.minimizationEnergy(applied_tip_force);
 
     // new energy approximation from gradient
     Real new_energy_approx = orig_energy + energy_grad.dot(delta.state_vec);

@@ -49,7 +49,7 @@ int main()
     rod.setState(state);
 
     Vec3r orig_tip_pos = CosseratRod<N>::tipPosition(h, v1, v2, v3, u1, u2, u3);
-    Eigen::Matrix<Real, 3, State::NumStates> grad = CosseratRod<N>::gradTipPosition(rod);
+    CosseratRod<N>::TipPositionGradientType grad = rod.tipPositionGradient();
 
     // small change in state
     State delta;

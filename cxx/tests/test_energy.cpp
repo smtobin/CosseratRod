@@ -11,7 +11,7 @@ int main()
     Real E = 3e6;
     Real nu = 0.45;
     CosseratRod<NUM_NODES> rod(length, circle_cross_section, E, nu);
-    std::cout << "Total energy: " << CosseratRod<NUM_NODES>::totalEnergy(rod, Vec3r(0,0,0)) << std::endl;
+    std::cout << "Total energy: " << rod.minimizationEnergy(Vec3r(0,0,0)) << std::endl;
     
     return EXIT_SUCCESS;
 }
