@@ -1,33 +1,31 @@
-#ifndef __COSSERAT_ROD_HPP
-#define __COSSERAT_ROD_HPP
+#ifndef __COSSERAT_ROD_LINEARIZED_HPP
+#define __COSSERAT_ROD_LINEARIZED_HPP
 
 #include "common.hpp"
 #include "math.hpp"
 #include "CosseratRodBase.hpp"
 #include "CosseratRodStates.hpp"
 
-#include <memory>
-
-template<int NumNodes_>
-class CosseratRod_OptimizationFunctor;
+template <int NumNodes_>
+class CosseratRodWithCrossSectionalDeformationLinearized_OptimizationFunctor;
 
 template <int NumNodes_>
-class CosseratRod : public CosseratRod_Base<NumNodes_, CosseratRod_State<NumNodes_>>
+class CosseratRodWithCrossSectionalDeformationLinearized : public CosseratRod_Base<NumNodes_, CosseratRodWithCrossSectionalDeformation_State<NumNodes_>>
 {
 public:
     constexpr static int NumNodes = NumNodes_;
 
-    using State = CosseratRod_State<NumNodes_>;
+    using State = CosseratRodWithCrossSectionalDeformation_State<NumNodes_>;
     using Base = CosseratRod_Base<NumNodes_, State>;
-    using OptimizationFunctor = CosseratRod_OptimizationFunctor<NumNodes_>;
+    using OptimizationFunctor = CosseratRodWithCrossSectionalDeformationLinearized_OptimizationFunctor<NumNodes_>;
     using TipPositionGradientType = typename Base::TipPositionGradientType;
     using EnergyGradientType = typename Base::EnergyGradientType;
 
 public:
     // constructor accepts any type of cross section
     template<typename CrossSectionType_>
-    CosseratRod(Real length, const CrossSectionType_& cross_section, Real E, Real nu)
-        : CosseratRod_Base<NumNodes_, State>(length, cross_section, E, nu)
+    CosseratRodWithCrossSectionalDeformationLinearized(Real length, const CrossSectionType_& cross_section, Real E, Real nu)
+        : Base(length, cross_section, E, nu)
     {   
     }
 
@@ -42,25 +40,23 @@ public:
      */
     virtual EnergyGradientType minimizationEnergyGradient(const Vec3r& applied_tip_force) const override;
 };
-#include "CosseratRod.impl.hpp"
-
-
+#include "CosseratRodWithCrossSectionalDeformationLinearized.impl.hpp"
 
 /** Functor used in the LBFGS optimization of the minimiziation energy.
  * Given x (the state), the () operator computes f(x) and the gradient.
  */
 template <int NumNodes_>
-class CosseratRod_OptimizationFunctor
+class CosseratRodWithCrossSectionalDeformationLinearized_OptimizationFunctor
 {
 public:
-    CosseratRod_OptimizationFunctor(CosseratRod<NumNodes_>* rod, Vec3r applied_tip_force)
+    CosseratRodWithCrossSectionalDeformationLinearized_OptimizationFunctor(CosseratRodWithCrossSectionalDeformationLinearized<NumNodes_>* rod, Vec3r applied_tip_force)
         : _rod(rod), _applied_tip_force(applied_tip_force)
     {}
 
     Real operator() (const VecXr& x, VecXr& grad)
     {
         // convert dynamic VecXr to static StateVecType vector and set the rod's state
-        typename CosseratRod<NumNodes_>::State::StateVecType state = x.head<CosseratRod<NumNodes_>::State::NumStates>();
+        typename CosseratRodWithCrossSectionalDeformationLinearized<NumNodes_>::State::StateVecType state = x.head<CosseratRodWithCrossSectionalDeformationLinearized<NumNodes_>::State::NumStates>();
         _rod->setState(state);
 
         // compute gradient and energy
@@ -72,8 +68,8 @@ public:
     }
 
 private:
-    CosseratRod<NumNodes_>* _rod;
+    CosseratRodWithCrossSectionalDeformationLinearized<NumNodes_>* _rod;
     Vec3r _applied_tip_force;
 };
 
-#endif // __COSSERAT_HPP
+#endif // __COSSERAT_ROD_LINEARIZED_HPP
