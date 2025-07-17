@@ -3,6 +3,8 @@
 
 #include "common.hpp"
 
+#include <fstream>
+
 /** A struct representing the state variables of the Cosserat rod.
  * This includes the curvatures u, the shear/stretch strains v,
  * and the cross-sectional deformation parameters a, b, and c.

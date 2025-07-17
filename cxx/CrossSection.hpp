@@ -10,6 +10,8 @@ public:
         : _rx(rx), _ry(ry)
     {}
 
+    virtual std::string type() const = 0;
+
     Real rx() const { return _rx; }
     Real ry() const { return _ry; }
     Real Ix() const { return _Ix; }
@@ -46,6 +48,8 @@ public:
 
         _torsional_correction = 1;  // TODO: update for ellipses
     }
+
+    virtual std::string type() const override { return "Ellipse"; }
 };
 
 class RectCrossSection : public CrossSection
@@ -57,7 +61,11 @@ public:
         _Ix = sx * sy * sy * sy / 12.0;
         _Iy = sy * sx * sx * sx / 12.0;
         _A0 = sx*sy;
+
+        _torsional_correction = 0.846; // TODO: update for ellipses (this is for squares)
     }
+
+    virtual std::string type() const override { return "Rect"; }
 };
 
 #endif // __CROSS_SECTION_HPP

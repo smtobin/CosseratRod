@@ -1,6 +1,7 @@
 import numpy as np
 import pyvista as pv
 import copy
+import cosserat
 
 # returns the matrix log of a SO3 rotation (i.e. maps SO3 --> so3)
 def MatLog_SO3(mat):
@@ -252,3 +253,35 @@ def getDeformedMeshFromNastranData(undeformed_mesh, undeformed_nodes_filename, n
 
     return deformed_mesh
 
+def loadRodFromFile(filename):
+    with open(filename, 'r') as file:
+        data = file.read()
+        data_arr = data.split("\n")
+
+    N = int(data_arr[0])
+    length = float(data_arr[1])
+    E = float(data_arr[2])
+    nu = float(data_arr[3])
+    cs_type = data_arr[4]
+    cs_rx = float(data_arr[5])
+    cs_ry = float(data_arr[6])
+    state = np.array(data_arr[7:]).astype(float)
+
+    # if the state does not have a,b,c, add default values
+    if len(state) < 3*N + 6*(N-1):
+        a_0 = np.ones(N)      # a = 1 when cross-section is undeformed
+        b_0 = np.ones(N)      # b = 1 when cross-section is undeformed
+        c_0 = np.zeros(N)     # c = 0 when cross-section is undeformed
+        state = np.hstack( (a_0, b_0, c_0, state) )
+
+    if cs_type == "Ellipse":
+        cross_section = cosserat.AnalyticalEllipseCrossSection(cs_rx, cs_ry)
+    elif cs_type == "Rect":
+        cross_section = cosserat.AnalyticalRectCrossSection(cs_rx, cs_ry)
+    
+    rod = cosserat.CosseratRod(N, length, cross_section, E, nu)
+    rod.Z = state
+
+    return rod
+
+    

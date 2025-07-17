@@ -27,3 +27,6 @@ target_link_libraries(TestEnergyGradient Eigen3::Eigen)
 
 add_executable(TestOptimization tests/test_optimization.cpp)
 target_link_libraries(TestOptimization Eigen3::Eigen)
+
+add_executable(TestWriteToFile tests/test_write_to_file.cpp)
+target_link_libraries(TestWriteToFile Eigen3::Eigen)

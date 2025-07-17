@@ -46,9 +46,14 @@ public:
               0, 0, 0, 0, 0, _G;
         
     }
+    // getters for rod properties
+    Real length() const { return _length; }
+    Real E() const { return _E; }
+    Real nu() const { return _nu; }
+    const CrossSection* crossSection() const { return _cross_section.get(); }
 
     // getter/setters for the rod state
-    const State& state() { return _state; }
+    const State& state() const { return _state; }
     void setState(const State& new_state) { _state = new_state; }
     void setState(const typename State::StateVecType& new_state_vec) { _state.state_vec = new_state_vec; }
 
