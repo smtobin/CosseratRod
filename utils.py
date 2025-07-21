@@ -277,11 +277,16 @@ def loadRodFromFile(filename):
     if cs_type == "Ellipse":
         cross_section = cosserat.AnalyticalEllipseCrossSection(cs_rx, cs_ry)
     elif cs_type == "Rect":
-        cross_section = cosserat.AnalyticalRectCrossSection(cs_rx, cs_ry)
+        cross_section = cosserat.AnalyticalRectCrossSection(cs_rx*2, cs_ry*2)
     
-    rod = cosserat.CosseratRod(N, length, cross_section, E, nu)
-    rod.Z = state
+    if len(state) > 3*N + 6*(N-1):
+        rod = cosserat.LinearDeformationCosseratRod(N, length, cross_section, E, nu)
+    else:
+        rod = cosserat.CosseratRod(N, length, cross_section, E, nu)
 
-    return rod
+    deformed_rod = copy.deepcopy(rod)
+    deformed_rod.Z = state
+
+    return (rod, deformed_rod)
 
     

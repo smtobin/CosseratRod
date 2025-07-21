@@ -22,7 +22,10 @@ ROD_WIDTH_X = 1
 ROD_WIDTH_Y = 0.5
 SPACING = ROD_WIDTH_X * 2
 
-SOLVED_ROD_FILENAMES = ["cxx/output/Rod_N=11_F=(10000,0,0).txt"]
+NASTRAN_UNDEFORMED_STL_FILENAME = "nastran/1x0.5_block_E=1e5_nu=0.3/undeformed.stl"
+NASTRAN_UNDEFORMED_CSV_FILENAME = "nastran/1x0.5_block_E=1e5_nu=0.3/undeformed.csv"
+NASTRAN_DEFORMED_FILENAME = "nastran/1x0.5_block_E=1e5_nu=0.3/deformed_F=500.csv"
+SOLVED_ROD_FILENAMES = ["cxx/output/RodCSDLin_N=15_F=(0,500,0).txt"]
 
 def plotModels(deformed_rods, undeformed_index=0):
     plotter = pv.Plotter()
@@ -111,12 +114,21 @@ def plotModelFEM(deformed_rods, undeformed_fem_mesh, deformed_fem_meshes):
     plotter.show()
 
 def main():
-    rods = []
+    undeformed_fem_mesh = tm.load_mesh(NASTRAN_UNDEFORMED_STL_FILENAME)
+    deformed_fem_mesh = utils.getDeformedMeshFromNastranData(undeformed_fem_mesh, NASTRAN_UNDEFORMED_CSV_FILENAME, NASTRAN_DEFORMED_FILENAME)
+
+    undeformed_rods = []
+    deformed_rods = []
     for filename in SOLVED_ROD_FILENAMES:
-        rod = utils.loadRodFromFile(filename)
-        rods.append(rod)
+        undeformed_rod, deformed_rod = utils.loadRodFromFile(filename)
+        print(f"Total energy: {deformed_rod._totalEnergy(deformed_rod.Z, [cosserat.AppliedTipForce([0,500,0], [0,0], True)])}")
+        
+        mesh.meshRodVertexError(undeformed_fem_mesh, deformed_fem_mesh, undeformed_rod, deformed_rod)
+        
+        undeformed_rods.append(undeformed_rod)
+        deformed_rods.append(deformed_rod)
     
-    plotModels(rods)
+    plotModels(deformed_rods)
 
 if __name__ == "__main__":
     main()

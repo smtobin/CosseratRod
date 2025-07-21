@@ -1139,7 +1139,40 @@ class CosseratRod:
         x_dir = end_transform[0:3,0]
         y_dir = end_transform[0:3,1]
         return p + x_dir * deformed_ab_coords[0] * self.cross_section.rx  + y_dir * deformed_ab_coords[1] * self.cross_section.ry
-    
+
+    ## given: an array of (s, a, b) coordinates
+    # where s: [0,1] ; 0 is base, 1 is tip
+    #       x: x-coordinate in cross-section plane
+    #       y: y-coordinate in cross-section plane
+    def positionsFromCosseratCoords(self, cosserat_coords):
+        node_transforms = self.nodeTransforms()
+
+        positions = np.zeros( (len(cosserat_coords), 3) )
+
+        for i, (s,x,y) in enumerate(cosserat_coords):
+            below_node = int(np.floor(s*(self.n-1)))
+            if below_node == self.n-1:
+                above_node = below_node
+                interp_factor = 0
+            else:
+                above_node = below_node + 1
+                interp_factor = s*(self.n-1) - below_node
+
+            below_transform = node_transforms[below_node]
+            above_transform = node_transforms[above_node]
+
+            # just do linear interpolation (as a first pass)
+            p = (1-interp_factor)*below_transform[0:3, 3] + interp_factor*above_transform[0:3, 3]
+            R = (1-interp_factor)*below_transform[0:3, 0:3] + interp_factor*above_transform[0:3, 0:3]
+            C = (1-interp_factor)*self.nodeDistortionMatrix(below_node) + interp_factor*self.nodeDistortionMatrix(above_node)
+            r = np.array([x, y, 0])
+
+            positions[i] = p + np.matmul(np.matmul(R, C), r)
+        
+        return positions
+
+
+
 
 ##############################################################################
 # Cosserat rod with cross-sectional deformation that is linear in x and y
@@ -1332,19 +1365,19 @@ class LinearDeformationCosseratRod:
                             v1[i],
                             2*c0_mid ])
             
-            ex = np.array([ 2*ax_mid + cx_mid,
-                            bx_mid,
+            ex = np.array([ 2*ax_mid,
+                            bx_mid + cy_mid,
                             c0_mid * u1[i] - a0_mid * u2[i],
                             c0_prime + a0_mid * u3[i],
                             a0_prime - c0_mid * u3[i],
-                            2*cx_mid + ay_mid + cy_mid ])
+                            3*cx_mid + ay_mid ])
             
-            ey = np.array([ ay_mid,
-                            2*by_mid + cy_mid,
+            ey = np.array([ cx_mid + ay_mid,
+                            2*by_mid,
                             b0_mid * u1[i] - c0_mid * u2[i],
                             b0_prime + c0_mid*u3[i],
                             c0_prime - b0_mid*u3[i],
-                            2*cy_mid + bx_mid + cx_mid ])
+                            3*cy_mid + bx_mid ])
             
             exy = np.array([0,
                             0,

@@ -27,7 +27,7 @@ struct RodUtils
 
         // Set up parameters
         LBFGSpp::LBFGSParam<Real> param;
-        param.epsilon = 0.1;
+        param.epsilon = RodType::OptTol;
         param.max_iterations = 10000;
 
         // Create solver object
@@ -79,6 +79,8 @@ struct RodUtils
             rod_type = "RodCSD";
         if constexpr (std::is_same_v<RodType, CosseratRodWithCrossSectionalDeformationLinearized<RodType::NumNodes>>)
             rod_type = "RodCSDLin";
+        if constexpr (std::is_same_v<RodType, CosseratRodWithLinearModesOfCrossSectionalDeformation<RodType::NumNodes>>)
+            rod_type = "RodCSDLinModes";
         
         std::string N_str = "N=" + std::to_string(RodType::NumNodes);
         std::stringstream force_ss;

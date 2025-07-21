@@ -16,16 +16,17 @@ template <int N>
 void benchmarkRods()
 {
     std::cout << "\n\n === N = " << N << " ===" << std::endl;
-    EllipseCrossSection circle_cross_section(0.5, 0.5);
+    // EllipseCrossSection cross_section(0.5, 0.5);
+    RectCrossSection cross_section(1.0, 2.0);
 
     Real length = 3.0;
     Real E = 3e6;
     Real nu = 0.45;
 
-    CosseratRod<N> rod(length, circle_cross_section, E, nu);
-    CosseratRodWithCrossSectionalDeformation<N> rod_with_deformation(length, circle_cross_section, E, nu);
-    CosseratRodWithCrossSectionalDeformationLinearized<N> rod_with_deformation_linearized(length, circle_cross_section, E, nu);
-    CosseratRodWithLinearModesOfCrossSectionalDeformation<N> rod_with_linear_modes(length, circle_cross_section, E, nu);
+    CosseratRod<N> rod(length, cross_section, E, nu);
+    CosseratRodWithCrossSectionalDeformation<N> rod_with_deformation(length, cross_section, E, nu);
+    CosseratRodWithCrossSectionalDeformationLinearized<N> rod_with_deformation_linearized(length, cross_section, E, nu);
+    CosseratRodWithLinearModesOfCrossSectionalDeformation<N> rod_with_linear_modes(length, cross_section, E, nu);
 
 
     Vec3r tip_force(10000, 0, 0);

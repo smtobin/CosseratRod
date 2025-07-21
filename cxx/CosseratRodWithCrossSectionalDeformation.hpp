@@ -16,6 +16,7 @@ class CosseratRodWithCrossSectionalDeformation : public CosseratRod_Base<NumNode
 {
 public:
     constexpr static int NumNodes = NumNodes_;
+    constexpr static Real OptTol = 0.1;
 
     using State = CosseratRodWithCrossSectionalDeformation_State<NumNodes_>;
     using Base = CosseratRod_Base<NumNodes_, State>;
