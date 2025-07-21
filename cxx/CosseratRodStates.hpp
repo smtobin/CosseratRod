@@ -155,4 +155,103 @@ struct CosseratRodWithCrossSectionalDeformation_State
     void set_u3(const StrainVarVecType& new_u3) { state_vec(Eigen::seqN(u3Start, NumNodes-1) ) = new_u3; }
 };
 
+/** A struct representing the state variables of a Cosserat rod with linear modes of cross-sectional deformation parameterized.
+ * This includes the curvatures u, the shear/stretch strains v,
+ * and the cross-sectional deformation parameters a0, ax, ay, b0, bx, by, and c0, cx, cy.
+ * 
+ * Ultimately just a wrapper around a state vector, with some utilities for extracting
+ * and working with different parts of the state easily.
+ * 
+ */
+template <int NumNodes_>
+struct CosseratRodWithLinearModesOfCrossSectionalDeformation_State
+{
+    constexpr static int NumNodes = NumNodes_;
+    constexpr static int NumStates = 9*NumNodes + 6*(NumNodes-1);   // number of states in the state vector
+    using StateVecType = Eigen::Vector<Real, NumStates>;            // typedef for the entire state vector
+    using CrossSectionVarVecType = Eigen::Vector<Real, NumNodes>;   // typedef for a,b,c vectors (they each have N entries)
+    using StrainVarVecType = Eigen::Vector<Real, NumNodes-1>;       // typedef for v1,v2,v3,u1,u2,u3 vectors (they each have N-1 entries)
+
+    // start indices for each of the different variables in the state vector
+    // each variable is stored contiguously
+    constexpr static int a0Start = 0;
+    constexpr static int axStart = NumNodes;
+    constexpr static int ayStart = 2*NumNodes;
+    constexpr static int b0Start = 3*NumNodes;
+    constexpr static int bxStart = 4*NumNodes;
+    constexpr static int byStart = 5*NumNodes;
+    constexpr static int c0Start = 6*NumNodes;
+    constexpr static int cxStart = 7*NumNodes;
+    constexpr static int cyStart = 8*NumNodes;
+    constexpr static int v1Start = 9*NumNodes;
+    constexpr static int v2Start = 10*NumNodes-1;
+    constexpr static int v3Start = 11*NumNodes-2;
+    constexpr static int u1Start = 12*NumNodes-3;
+    constexpr static int u2Start = 13*NumNodes-4;
+    constexpr static int u3Start = 14*NumNodes-5;
+
+    // the vector that holds the entire state of the rod
+    StateVecType state_vec;
+
+    // constructor initializes the state to be a straight rod with no deformation energy
+    CosseratRodWithLinearModesOfCrossSectionalDeformation_State()
+    {
+        state_vec = StateVecType::Zero();
+
+        set_a0(CrossSectionVarVecType::Ones());
+        set_b0(CrossSectionVarVecType::Ones());
+        set_v3(StrainVarVecType::Ones());
+    }
+
+    // adding two states is just adding the two state vectors
+    CosseratRodWithLinearModesOfCrossSectionalDeformation_State operator+(const CosseratRodWithLinearModesOfCrossSectionalDeformation_State& other)
+    {
+        CosseratRodWithLinearModesOfCrossSectionalDeformation_State new_state;
+        new_state.state_vec = state_vec + other.state_vec;
+        return new_state;
+    }
+
+    // subtracting two states is just subtracting one state vector from the other
+    CosseratRodWithLinearModesOfCrossSectionalDeformation_State operator-(const CosseratRodWithLinearModesOfCrossSectionalDeformation_State& other)
+    {
+        CosseratRodWithLinearModesOfCrossSectionalDeformation_State new_state;
+        new_state.state_vec = state_vec - other.state_vec;
+        return new_state;
+    }
+
+    // getters for each state variable
+    CrossSectionVarVecType a0() const { return state_vec( Eigen::seqN(a0Start,NumNodes) ); } 
+    CrossSectionVarVecType b0() const { return state_vec( Eigen::seqN(b0Start, NumNodes) ); }
+    CrossSectionVarVecType c0() const { return state_vec( Eigen::seqN(c0Start, NumNodes) ); }
+    CrossSectionVarVecType ax() const { return state_vec( Eigen::seqN(axStart,NumNodes) ); } 
+    CrossSectionVarVecType bx() const { return state_vec( Eigen::seqN(bxStart, NumNodes) ); }
+    CrossSectionVarVecType cx() const { return state_vec( Eigen::seqN(cxStart, NumNodes) ); }
+    CrossSectionVarVecType ay() const { return state_vec( Eigen::seqN(ayStart,NumNodes) ); } 
+    CrossSectionVarVecType by() const { return state_vec( Eigen::seqN(byStart, NumNodes) ); }
+    CrossSectionVarVecType cy() const { return state_vec( Eigen::seqN(cyStart, NumNodes) ); }
+    StrainVarVecType v1() const { return state_vec( Eigen::seqN(v1Start, NumNodes-1) ); }
+    StrainVarVecType v2() const { return state_vec( Eigen::seqN(v2Start, NumNodes-1) ); }
+    StrainVarVecType v3() const { return state_vec( Eigen::seqN(v3Start, NumNodes-1) ); }
+    StrainVarVecType u1() const { return state_vec( Eigen::seqN(u1Start, NumNodes-1) ); }
+    StrainVarVecType u2() const { return state_vec( Eigen::seqN(u2Start, NumNodes-1) ); }
+    StrainVarVecType u3() const { return state_vec( Eigen::seqN(u3Start, NumNodes-1) ); }
+
+    // setters for each state variable
+    void set_a0(const CrossSectionVarVecType& new_a0) { state_vec( Eigen::seqN(a0Start,NumNodes) ) = new_a0; }
+    void set_b0(const CrossSectionVarVecType& new_b0) { state_vec( Eigen::seqN(b0Start,NumNodes) ) = new_b0; }
+    void set_c0(const CrossSectionVarVecType& new_c0) { state_vec( Eigen::seqN(c0Start,NumNodes) ) = new_c0; }
+    void set_ax(const CrossSectionVarVecType& new_ax) { state_vec( Eigen::seqN(axStart,NumNodes) ) = new_ax; }
+    void set_bx(const CrossSectionVarVecType& new_bx) { state_vec( Eigen::seqN(bxStart,NumNodes) ) = new_bx; }
+    void set_cx(const CrossSectionVarVecType& new_cx) { state_vec( Eigen::seqN(cxStart,NumNodes) ) = new_cx; }
+    void set_ay(const CrossSectionVarVecType& new_ay) { state_vec( Eigen::seqN(ayStart,NumNodes) ) = new_ay; }
+    void set_by(const CrossSectionVarVecType& new_by) { state_vec( Eigen::seqN(byStart,NumNodes) ) = new_by; }
+    void set_cy(const CrossSectionVarVecType& new_cy) { state_vec( Eigen::seqN(cyStart,NumNodes) ) = new_cy; }
+    void set_v1(const StrainVarVecType& new_v1) { state_vec(Eigen::seqN(v1Start, NumNodes-1) ) = new_v1; }
+    void set_v2(const StrainVarVecType& new_v2) { state_vec(Eigen::seqN(v2Start, NumNodes-1) ) = new_v2; }
+    void set_v3(const StrainVarVecType& new_v3) { state_vec(Eigen::seqN(v3Start, NumNodes-1) ) = new_v3; }
+    void set_u1(const StrainVarVecType& new_u1) { state_vec(Eigen::seqN(u1Start, NumNodes-1) ) = new_u1; }
+    void set_u2(const StrainVarVecType& new_u2) { state_vec(Eigen::seqN(u2Start, NumNodes-1) ) = new_u2; }
+    void set_u3(const StrainVarVecType& new_u3) { state_vec(Eigen::seqN(u3Start, NumNodes-1) ) = new_u3; }
+};
+
 #endif // __COSSERAT_ROD_STATES_HPP
