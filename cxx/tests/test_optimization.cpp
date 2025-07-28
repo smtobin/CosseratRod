@@ -7,9 +7,9 @@
 #include <chrono>
 #include <array>
 
-#define N_ITER 1
+#define N_ITER 10
 
-constexpr std::array<int, 4> NODE_NUMBERS = {5, 10, 25, 50};
+constexpr std::array<int, 5> NODE_NUMBERS = {5, 10, 20, 50, 100};
 // constexpr std::array<int, 2> NODE_NUMBERS = {10, 25};
 
 template <int N>
@@ -17,11 +17,11 @@ void benchmarkRods()
 {
     std::cout << "\n\n === N = " << N << " ===" << std::endl;
     // EllipseCrossSection cross_section(0.5, 0.5);
-    RectCrossSection cross_section(1.0, 2.0);
+    RectCrossSection cross_section(1.0, 0.5);
 
-    Real length = 3.0;
-    Real E = 3e6;
-    Real nu = 0.45;
+    Real length = 2.0;
+    Real E = 1e5;
+    Real nu = 0.3;
 
     CosseratRod<N> rod(length, cross_section, E, nu);
     CosseratRodWithCrossSectionalDeformation<N> rod_with_deformation(length, cross_section, E, nu);
@@ -29,7 +29,7 @@ void benchmarkRods()
     CosseratRodWithLinearModesOfCrossSectionalDeformation<N> rod_with_linear_modes(length, cross_section, E, nu);
 
 
-    Vec3r tip_force(10000, 0, 0);
+    Vec3r tip_force(0, 500, 0);
     std::cout << "\n=== Standard Cosserat Rod ===" << std::endl;
     RodUtils::solveOptimizationProblem(rod, tip_force, N_ITER);
     std::cout << "\n=== Linearized Constant Modes of Cross-Sectional Deformation ===" << std::endl;

@@ -16,7 +16,7 @@ class CosseratRodWithCrossSectionalDeformation : public CosseratRod_Base<NumNode
 {
 public:
     constexpr static int NumNodes = NumNodes_;
-    constexpr static Real OptTol = 0.1;
+    constexpr static Real OptTol = 0;
 
     using State = CosseratRodWithCrossSectionalDeformation_State<NumNodes_>;
     using Base = CosseratRod_Base<NumNodes_, State>;
@@ -27,8 +27,8 @@ public:
 public:
     // constructor accepts any type of cross section
     template<typename CrossSectionType_>
-    CosseratRodWithCrossSectionalDeformation(Real length, const CrossSectionType_& cross_section, Real E, Real nu)
-        : Base(length, cross_section, E, nu)
+    CosseratRodWithCrossSectionalDeformation(Real length, const CrossSectionType_& cross_section, Real E, Real nu, bool constrain_base=true, bool constrain_tip=false)
+        : Base(length, cross_section, E, nu, constrain_base, constrain_tip)
     {   
     }
 

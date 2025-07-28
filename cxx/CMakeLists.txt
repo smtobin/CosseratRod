@@ -30,3 +30,6 @@ target_link_libraries(TestOptimization Eigen3::Eigen)
 
 add_executable(TestWriteToFile tests/test_write_to_file.cpp)
 target_link_libraries(TestWriteToFile Eigen3::Eigen)
+
+add_executable(TestPeristalticRobot tests/test_peristaltic_robot.cpp)
+target_link_libraries(TestPeristalticRobot Eigen3::Eigen)

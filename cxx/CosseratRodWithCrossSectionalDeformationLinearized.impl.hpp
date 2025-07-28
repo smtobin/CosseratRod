@@ -112,14 +112,6 @@ typename CosseratRodWithCrossSectionalDeformationLinearized<N>::EnergyGradientTy
         const Real b_prime = (b[i+1] - b[i]) / h;
         const Real c_prime = (c[i+1] - c[i]) / h;
 
-        Mat3r K_mat = Mat3r::Zero();
-        K_mat(0,0) = E * (Ix * b_mid * b_mid + Iy * c_mid * c_mid);
-        K_mat(1,1) = E * (Iy * a_mid * a_mid + Ix * c_mid * c_mid);
-        K_mat(0,1) = -E * (Iy * a_mid * c_mid + Ix * b_mid * c_mid);
-        K_mat(1,0) = K_mat(0,1);
-        K_mat(2,2) = G * Iy * (a_mid * a_mid + c_mid * c_mid) +
-            G * Ix * (b_mid * b_mid + c_mid * c_mid);
-
         Vec3r u_vec(u1[i], u2[i], u3[i]);
         Vec3r strain_vec(a_mid-1, b_mid-1, v3[i]-1);
 
@@ -164,22 +156,29 @@ typename CosseratRodWithCrossSectionalDeformationLinearized<N>::EnergyGradientTy
         energy_grad[State::cStart + i] += 0.5*h * (
             8*G*A*c_mid*dc_dci + 
             2*eta*G*Iz*c_prime*dcp_dci +
-            2*G*u3[i]*(Iy - Ix)
+            2*G*u3[i]*(Iy - Ix)*dcp_dci
         );
         energy_grad[State::cStart + i+1] += 0.5*h * (
             8*G*A*c_mid*dc_dci + 
             2*eta*G*Iz*c_prime*dcp_dciplus1 +
-            2*G*u3[i]*(Iy - Ix)
+            2*G*u3[i]*(Iy - Ix)*dcp_dciplus1
         );
     }
 
-    energy_grad[State::aStart] = 0;
-    energy_grad[State::bStart] = 0;
-    energy_grad[State::cStart] = 0;
-
-    energy_grad[State::aStart+N-1] = 0;
-    energy_grad[State::bStart+N-1] = 0;
-    energy_grad[State::cStart+N-1] = 0;
+    if (this->_constrain_base)
+    {
+        energy_grad[State::aStart] = 0;
+        energy_grad[State::bStart] = 0;
+        energy_grad[State::cStart] = 0;
+    }
+    
+    if (this->_constrain_tip)
+    {
+        energy_grad[State::aStart+N-1] = 0;
+        energy_grad[State::bStart+N-1] = 0;
+        energy_grad[State::cStart+N-1] = 0;
+    }
+    
 
     // subtract gradient w.r.t tip position
     energy_grad -= applied_tip_force.transpose() * tip_pos_grad;

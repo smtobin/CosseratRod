@@ -4,6 +4,11 @@
 #include "common.hpp"
 #include "../LBFGSpp/include/LBFGS.h"   // TODO: change this path
 
+#include "CosseratRod.hpp"
+#include "CosseratRodWithCrossSectionalDeformation.hpp"
+#include "CosseratRodWithCrossSectionalDeformationLinearized.hpp"
+#include "CosseratRodWithLinearModesOfCrossSectionalDeformation.hpp"
+
 #include <chrono>
 
 struct RodUtils

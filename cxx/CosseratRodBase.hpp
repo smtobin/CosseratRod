@@ -28,8 +28,8 @@ public:
 
     // constructor accepts any type of cross section
     template<typename CrossSectionType_>
-    CosseratRod_Base(Real length, const CrossSectionType_& cross_section, Real E, Real nu)
-        : _length(length), _state(), _E(E), _nu(nu)
+    CosseratRod_Base(Real length, const CrossSectionType_& cross_section, Real E, Real nu, bool constrain_base, bool constrain_tip)
+        : _length(length), _state(), _E(E), _nu(nu), _constrain_base(constrain_base), _constrain_tip(constrain_tip)
     {
         // make a copy of the cross section
         _cross_section = std::make_unique<CrossSectionType_>(cross_section);
@@ -91,8 +91,11 @@ public:
     virtual EnergyGradientType minimizationEnergyGradient(const Vec3r& applied_tip_force) const = 0;
 
 protected:
-    Real _length;
-    std::unique_ptr<CrossSection> _cross_section;
+    Real _length;   // the length of the rod (z-axis dimension)
+    std::unique_ptr<CrossSection> _cross_section;   // the cross section of the rod
+
+    bool _constrain_base;   // whether or not to constrain the cross-section at the base to not deform
+    bool _constrain_tip;   // whether or not to constrain the cross-section at the tip to not deform
 
     State _state;
 

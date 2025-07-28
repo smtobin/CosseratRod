@@ -547,25 +547,32 @@ CosseratRodWithLinearModesOfCrossSectionalDeformation<N>::minimizationEnergyGrad
 
     }
 
-    energy_grad[State::a0Start] = 0;
-    energy_grad[State::b0Start] = 0;
-    energy_grad[State::c0Start] = 0;
-    energy_grad[State::axStart] = 0;
-    energy_grad[State::bxStart] = 0;
-    energy_grad[State::cxStart] = 0;
-    energy_grad[State::ayStart] = 0;
-    energy_grad[State::byStart] = 0;
-    energy_grad[State::cyStart] = 0;
+    if (this->_constrain_base)
+    {
+        energy_grad[State::a0Start] = 0;
+        energy_grad[State::b0Start] = 0;
+        energy_grad[State::c0Start] = 0;
+        energy_grad[State::axStart] = 0;
+        energy_grad[State::bxStart] = 0;
+        energy_grad[State::cxStart] = 0;
+        energy_grad[State::ayStart] = 0;
+        energy_grad[State::byStart] = 0;
+        energy_grad[State::cyStart] = 0;
+    }
 
-    energy_grad[State::a0Start+N-1] = 0;
-    energy_grad[State::b0Start+N-1] = 0;
-    energy_grad[State::c0Start+N-1] = 0;
-    energy_grad[State::axStart+N-1] = 0;
-    energy_grad[State::bxStart+N-1] = 0;
-    energy_grad[State::cxStart+N-1] = 0;
-    energy_grad[State::ayStart+N-1] = 0;
-    energy_grad[State::byStart+N-1] = 0;
-    energy_grad[State::cyStart+N-1] = 0;
+    if (this->_constrain_tip)
+    {
+        energy_grad[State::a0Start+N-1] = 0;
+        energy_grad[State::b0Start+N-1] = 0;
+        energy_grad[State::c0Start+N-1] = 0;
+        energy_grad[State::axStart+N-1] = 0;
+        energy_grad[State::bxStart+N-1] = 0;
+        energy_grad[State::cxStart+N-1] = 0;
+        energy_grad[State::ayStart+N-1] = 0;
+        energy_grad[State::byStart+N-1] = 0;
+        energy_grad[State::cyStart+N-1] = 0;
+    }
+    
 
     // subtract gradient w.r.t tip position
     energy_grad -= applied_tip_force.transpose() * tip_pos_grad;

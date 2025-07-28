@@ -346,9 +346,9 @@ class CosseratRod:
         Z_bounds[2*self.n] = (0,0)   # c at s=0 is 0 (undeformed)
 
         # constrain cross-section at end of rod (s=L) to be undeformed
-        Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
-        Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
-        Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
+        # Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
+        # Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
+        # Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
 
         res = opt.minimize(self._totalEnergyCosserat, self.Z, args=(applied_tip_forces), method='slsqp', bounds=Z_bounds, options={'maxiter': 10000, 'disp':True})
         self.Z = res.x
@@ -378,9 +378,9 @@ class CosseratRod:
         Z_bounds[2*self.n] = (0,0)   # c at s=0 is 0 (undeformed)
 
         # constrain cross-section at end of rod (s=L) to be undeformed
-        Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
-        Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
-        Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
+        # Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
+        # Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
+        # Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
 
         # constrain the rest of a, b, and c to be reasonable values (shouldn't be needed)
         # for i in range(1,self.n-1):
@@ -428,9 +428,9 @@ class CosseratRod:
         Z_bounds[2*self.n] = (0,0)   # c at s=0 is 0 (undeformed)
 
         # constrain cross-section at end of rod (s=L) to be undeformed
-        Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
-        Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
-        Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
+        # Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
+        # Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
+        # Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
 
         # constrain the rest of a, b, and c to be reasonable values (shouldn't be needed)
         # for i in range(1,self.n-1):
@@ -478,9 +478,9 @@ class CosseratRod:
         Z_bounds[2*self.n] = (0,0)   # c at s=0 is 0 (undeformed)
 
         # constrain cross-section at end of rod (s=L) to be undeformed
-        Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
-        Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
-        Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
+        # Z_bounds[self.n-1] = (1,1)   # a at s=L is 1 (undeformed)
+        # Z_bounds[2*self.n-1] = (1,1) # b at s=L is 1 (undeformed)
+        # Z_bounds[3*self.n-1] = (0,0) # c at s=L is 0 (undeformed)
 
         res = opt.minimize(self._totalEnergyTorsionalCorrection, self.Z, args=(applied_tip_forces), method='slsqp', bounds=Z_bounds, options={'maxiter': 10000, 'disp':True})
         self.Z = res.x
@@ -982,8 +982,8 @@ class CosseratRod:
             total_moment += np.cross(p, force)
 
         # print(f"total_moment: {total_moment}")
-        print(f"energy: {energy.item()}")
-        print(f"tip position: ({tip_pos[0]}, {tip_pos[1]}, {tip_pos[2]})")
+        # print(f"energy: {energy.item()}")
+        # print(f"tip position: ({tip_pos[0]}, {tip_pos[1]}, {tip_pos[2]})")
             
         return energy.item() # use .item() to turn the 1x1 matrix into a scalar
 

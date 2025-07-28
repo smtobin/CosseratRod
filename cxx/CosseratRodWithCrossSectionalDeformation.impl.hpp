@@ -215,13 +215,20 @@ typename CosseratRodWithCrossSectionalDeformation<N>::EnergyGradientType Cossera
         );
     }
 
-    energy_grad[State::aStart] = 0;
-    energy_grad[State::bStart] = 0;
-    energy_grad[State::cStart] = 0;
-
-    energy_grad[State::aStart+N-1] = 0;
-    energy_grad[State::bStart+N-1] = 0;
-    energy_grad[State::cStart+N-1] = 0;
+    if (this->_constrain_base)
+    {
+        energy_grad[State::aStart] = 0;
+        energy_grad[State::bStart] = 0;
+        energy_grad[State::cStart] = 0;
+    }
+    
+    if (this->_constrain_tip)
+    {
+        energy_grad[State::aStart+N-1] = 0;
+        energy_grad[State::bStart+N-1] = 0;
+        energy_grad[State::cStart+N-1] = 0;
+    }
+    
 
     // subtract gradient w.r.t tip position
     energy_grad -= applied_tip_force.transpose() * tip_pos_grad;
