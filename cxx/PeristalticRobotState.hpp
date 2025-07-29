@@ -15,7 +15,7 @@ template <int NumNodes_>
 struct PeristalticRobot_State
 {
     constexpr static int NumNodes = NumNodes_;
-    constexpr static int NumStates = 3*NumNodes + 6*(NumNodes-1);   // number of states in the state vector
+    constexpr static int NumStates = 3*NumNodes + 6*(NumNodes-1) + 3;   // number of states in the state vector
     using StateVecType = Eigen::Vector<Real, NumStates>;            // typedef for the entire state vector
     using CrossSectionVarVecType = Eigen::Vector<Real, NumNodes>;   // typedef for a,b,c vectors (they each have N entries)
     using StrainVarVecType = Eigen::Vector<Real, NumNodes-1>;       // typedef for v1,v2,v3,u1,u2,u3 vectors (they each have N-1 entries)
@@ -31,6 +31,7 @@ struct PeristalticRobot_State
     constexpr static int u1Start = 6*NumNodes-3;
     constexpr static int u2Start = 7*NumNodes-4;
     constexpr static int u3Start = 8*NumNodes-5;
+    constexpr static int pStart = 9*NumNodes-6;
 
     // the vector that holds the entire state of the rod
     StateVecType state_vec;
@@ -71,6 +72,7 @@ struct PeristalticRobot_State
     StrainVarVecType u1() const { return state_vec( Eigen::seqN(u1Start, NumNodes-1) ); }
     StrainVarVecType u2() const { return state_vec( Eigen::seqN(u2Start, NumNodes-1) ); }
     StrainVarVecType u3() const { return state_vec( Eigen::seqN(u3Start, NumNodes-1) ); }
+    Vec3r p() const { return state_vec( Eigen::seqN(pStart, 3) ); }
 
     // setters for each state variable
     void set_a(const CrossSectionVarVecType& new_a) { state_vec( Eigen::seqN(aStart,NumNodes) ) = new_a; }
@@ -82,12 +84,14 @@ struct PeristalticRobot_State
     void set_u1(const StrainVarVecType& new_u1) { state_vec(Eigen::seqN(u1Start, NumNodes-1) ) = new_u1; }
     void set_u2(const StrainVarVecType& new_u2) { state_vec(Eigen::seqN(u2Start, NumNodes-1) ) = new_u2; }
     void set_u3(const StrainVarVecType& new_u3) { state_vec(Eigen::seqN(u3Start, NumNodes-1) ) = new_u3; }
+    void set_p(const Vec3r& new_p) { state_vec(Eigen::seqN(pStart, 3) ) = new_p; }
 
     friend std::ostream& operator<<(std::ostream& stream, const PeristalticRobot_State& state)
     {
         stream << "a: " << state.a().transpose() << "\nb: " << state.b().transpose() << "\nc: " << state.c().transpose() <<
          "\nv1: " << state.v1().transpose() << "\nv2: " << state.v2().transpose() << "\nv3: " << state.v3().transpose() << 
-            "\nu1: " << state.u1().transpose() << "\nu2: " << state.u2().transpose() << "\nu3: " << state.u3().transpose();
+            "\nu1: " << state.u1().transpose() << "\nu2: " << state.u2().transpose() << "\nu3: " << state.u3().transpose() <<
+            "\np: " << state.p().transpose() << std::endl;
         return stream;
     }
 };

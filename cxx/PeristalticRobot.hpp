@@ -23,7 +23,7 @@ public:
     using OptimizationFunctor = PeristalticRobot_OptimizationFunctor<NumNodes_>;
 
     // typedef for gradient of tip position w.r.t. the state
-    using TipPositionGradientType = Eigen::Matrix<Real, 3, State::NumStates>;
+    using PositionGradientType = Eigen::Matrix<Real, 3, State::NumStates>;
     // typedef for gradient of energy w.r.t. the state
     using EnergyGradientType = Eigen::Vector<Real, State::NumStates>;   
 
@@ -35,6 +35,11 @@ public:
          _num_actuators(num_actuators), _actuator_length(actuator_length), _actuator_cross_section(actuator_cross_section), _state(),
          _E(E), _nu(nu)
     {   
+        // make sure we have an odd number of nodes
+        static_assert(NumNodes_ % 2 == 1);
+
+        _center_node = NumNodes_ / 2;
+
         assert(num_actuators*actuator_length < length);
 
         // figure out the how many nodes each actuator should take up
@@ -104,6 +109,8 @@ public:
     Real nu() const { return _nu; }
     const CrossSection* crossSection() const { return &_rod_cross_section; }
 
+    int numActuators() const { return _num_actuators; }
+
     // getter/setters for the rod state
     const State& state() const { return _state; }
     void setState(const State& new_state) { _state = new_state; }
@@ -131,6 +138,20 @@ public:
     /** Computes the gradient of the tip position w.r.t. the rod state. */
     // TipPositionGradientType tipPositionGradient() const;
 
+    Vec3r actuatorPosition(int actuator_index) const;
+
+    Vec3r actuatorPosition(int actuator_index,
+        const typename State::StrainVarVecType& v1,
+        const typename State::StrainVarVecType& v2,
+        const typename State::StrainVarVecType& v3,
+        const typename State::StrainVarVecType& u1,
+        const typename State::StrainVarVecType& u2,
+        const typename State::StrainVarVecType& u3) const;
+
+    PositionGradientType actuatorPositionGradient(int actuator_index) const;
+
+    void printNodePositions() const;
+
     /** Computes the total energy (i.e., strain energy - f*x) used by LBFGS.
      * The minimization of this energy over the rod state yields the equilibrium rod state
      * resulting from the applied tip force.
@@ -153,6 +174,8 @@ protected:
     std::vector<std::pair<int,int>> _actuator_intervals;    // node indices (start, end) of the beginning and end of each actuator
 
     std::vector<Real> _node_locations;  // the location (in terms of undeformed length along the rod) of each node
+
+    int _center_node;
 
     State _state;
 
@@ -195,6 +218,56 @@ public:
 private:
     PeristalticRobot<NumNodes_>* _robot;
     const std::vector<Real>& _actuation_pressures;
+};
+
+#include "../alglib-cpp/src/ap.h"
+template <int N>
+struct PeristalticRobot_Optimization
+{
+    struct UserInfo
+    {
+        PeristalticRobot<N>* robot;
+        std::vector<Real> actuation_pressures;
+        std::vector<Vec3r> actuation_positions;
+    };
+
+    static void func(const alglib::real_1d_array& x, alglib::real_1d_array& fi, alglib::real_2d_array& jac, void* ptr)
+    {
+        UserInfo* info = static_cast<UserInfo*>(ptr);
+        PeristalticRobot<N>* robot = info->robot;
+        
+        using StateVecType = typename PeristalticRobot<N>::State::StateVecType;
+        const StateVecType state = Eigen::Map<const StateVecType>(x.getcontent());
+        robot->setState(state);
+
+        typename PeristalticRobot<N>::EnergyGradientType grad = robot->minimizationEnergyGradient(info->actuation_pressures);
+        Real energy = robot->minimizationEnergy(info->actuation_pressures);
+
+        // set optimization function and its gradient
+        fi[0] = energy;
+
+        int num_states = PeristalticRobot<N>::State::NumStates;
+        for (int i = 0; i < num_states; i++)
+            jac[0][i] = grad[i];
+
+
+        // get actuator position constraint functions and their gradients w.r.t state
+        for (int a = 0; a < robot->numActuators(); a++)
+        {
+            Vec3r pos_diff = (robot->actuatorPosition(a) - info->actuation_positions[a]);
+            fi[a*3 + 1] = pos_diff[0];
+            fi[a*3 + 2] = pos_diff[1];
+            fi[a*3 + 3] = pos_diff[2];
+            typename PeristalticRobot<N>::PositionGradientType pos_grad = robot->actuatorPositionGradient(a);
+            for (int i = 0; i < num_states; i++)
+            {
+                jac[a*3 + 1][i] = pos_grad(0,i);
+                jac[a*3 + 2][i] = pos_grad(1,i);
+                jac[a*3 + 3][i] = pos_grad(2,i);
+            }
+        }
+
+    }
 };
 
 #endif // __PERISTALTIC_ROBOT_HPP

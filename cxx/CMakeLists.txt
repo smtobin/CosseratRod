@@ -13,6 +13,23 @@ find_package(Eigen3 3.3 REQUIRED)   # find Eigen
 # add_library(CosseratRod Cosserat.cpp)
 # target_link_libraries(CosseratRod Eigen3::Eigen)
 
+
+set(ALGLIB_SRC_DIR "../alglib-cpp/src")
+set(ALGLIB_SOURCES
+    ${ALGLIB_SRC_DIR}/ap.cpp
+    ${ALGLIB_SRC_DIR}/alglibinternal.cpp
+    ${ALGLIB_SRC_DIR}/linalg.cpp
+    ${ALGLIB_SRC_DIR}/alglibmisc.cpp
+    ${ALGLIB_SRC_DIR}/solvers.cpp
+    ${ALGLIB_SRC_DIR}/optimization.cpp
+)
+
+add_library(AlglibOptimization)
+target_sources(AlglibOptimization
+    PRIVATE
+        ${ALGLIB_SOURCES}
+)
+
 add_executable(TestEnergy tests/test_energy.cpp)
 target_link_libraries(TestEnergy Eigen3::Eigen)
 
@@ -32,4 +49,10 @@ add_executable(TestWriteToFile tests/test_write_to_file.cpp)
 target_link_libraries(TestWriteToFile Eigen3::Eigen)
 
 add_executable(TestPeristalticRobot tests/test_peristaltic_robot.cpp)
-target_link_libraries(TestPeristalticRobot Eigen3::Eigen)
+target_link_libraries(TestPeristalticRobot Eigen3::Eigen AlglibOptimization)
+
+add_executable(TestAlglib tests/test_alglib.cpp)
+target_link_libraries(TestAlglib Eigen3::Eigen AlglibOptimization)
+
+add_executable(TestPeristalticRobotMotion tests/test_peristaltic_robot_motion.cpp)
+target_link_libraries(TestPeristalticRobotMotion Eigen3::Eigen AlglibOptimization)
