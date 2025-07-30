@@ -8,7 +8,7 @@
 int main()
 {
     EllipseCrossSection rod_cs(0.25, 0.25);
-    EllipseCrossSection actuator_cs(0.15, 0.15);
+    EllipseCrossSection actuator_cs(0.22, 0.22);
     Real rod_length = 2.0;
     Real actuator_length = 0.7;
     int num_actuators = 2;
@@ -21,18 +21,18 @@ int main()
     // set series of actuation pressures for the actuators
     int num_steps = 6;
     std::vector<Real> actuator1_pressures(num_steps);
-    actuator1_pressures[0] = 100e3;
-    actuator1_pressures[1] = 200e3;
-    actuator1_pressures[2] = 300e3;
-    actuator1_pressures[3] = 400e3;
-    actuator1_pressures[4] = 500e3;
-    actuator1_pressures[5] = 600e3;
+    actuator1_pressures[0] = 70e3;
+    actuator1_pressures[1] = 150e3;
+    actuator1_pressures[2] = 150e3;
+    actuator1_pressures[3] = 0;
+    actuator1_pressures[4] = 70e3;
+    actuator1_pressures[5] = 150e3;
     std::vector<Real> actuator2_pressures(num_steps);
     actuator2_pressures[0] = 0;
     actuator2_pressures[1] = 0;
-    actuator2_pressures[2] = 0;
-    actuator2_pressures[3] = 0;
-    actuator2_pressures[4] = 0;
+    actuator2_pressures[2] = 70e3;
+    actuator2_pressures[3] = 70e3;
+    actuator2_pressures[4] = 70e3;
     actuator2_pressures[5] = 0;
 
     std::vector<std::vector<Real>> actuator_pressures(num_actuators);

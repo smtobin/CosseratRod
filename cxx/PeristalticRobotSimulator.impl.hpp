@@ -116,6 +116,7 @@ std::vector<typename PeristalticRobot<N>::State> PeristalticRobotSimulator<N>::r
     for (int step = 0; step < num_steps; step++)
     try
     {
+        std::cout << "\n=== Step " << step << " ===" << std::endl;
         alglib::real_1d_array x0;
         x0.setcontent(num_states, _robot->state().state_vec.data());
         // create optimizer object
@@ -128,15 +129,22 @@ std::vector<typename PeristalticRobot<N>::State> PeristalticRobotSimulator<N>::r
         for (int a = 0; a < _robot->numActuators(); a++)
         {
             current_actuator_positions[a] = _robot->actuatorPosition(a);
+            std::cout << "Actuator " << a << " position: " << current_actuator_positions[a].transpose() << std::endl;
         }
 
         // fix an actuator if its pressure is greater than its pre-determined critical pressure
+        // otherwise let it be free
         for (int a = 0; a < _robot->numActuators(); a++)
         {
             if (_actuator_pressures[a][step] >= _critical_pressures[a])
             {
                 nl[3*a] = 0; nl[3*a+1] = 0; nl[3*a+2] = 0;
                 nu[3*a] = 0; nu[3*a+1] = 0; nu[3*a+2] = 0;
+            }
+            else
+            {
+                nl[3*a] = std::numeric_limits<Real>::lowest(); nl[3*a+1] = std::numeric_limits<Real>::lowest(); nl[3*a+2] = std::numeric_limits<Real>::lowest();
+                nu[3*a] = std::numeric_limits<Real>::max(); nu[3*a+1] = std::numeric_limits<Real>::max(); nu[3*a+2] = std::numeric_limits<Real>::max();
             }
         }
 
@@ -167,7 +175,7 @@ std::vector<typename PeristalticRobot<N>::State> PeristalticRobotSimulator<N>::r
         // std::cout << "Elapsed time for optimization: " << time_ms << " ms" << std::endl;
         alglib::minnlcresults(state, x1, rep);
 
-        std::cout << "Final state:\n" << x1.tostring(5).c_str() << std::endl;
+        // std::cout << "Final state:\n" << x1.tostring(5).c_str() << std::endl;
 
         output[step] = _robot->state();
     }

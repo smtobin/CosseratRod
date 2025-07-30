@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <cassert>
+#include <fstream>
 
 template<int NumNodes_>
 class PeristalticRobot_OptimizationFunctor;
@@ -162,6 +163,27 @@ public:
      * Used by LBFGS to minimize the energy.
      */
     EnergyGradientType minimizationEnergyGradient(const std::vector<Real>& actuator_pressures) const;
+
+    /** Writes the peristaltic robot to file. */
+    void writeToFile(const std::string& filename) const
+    {
+        std::ofstream file(filename);
+        if (file.is_open())
+        {
+            file << toString();
+        }
+    }
+
+    /** Returns a string representing the peristaltic robot. */
+    std::string toString() const
+    {
+        std::stringstream ss;
+        ss << NumNodes_ << "\n" << _length << "\n" << _E << "\n" << _nu << "\n" <<
+                crossSection()->type() << "\n" << crossSection()->rx() << "\n" << crossSection()->ry() << "\n" <<
+                _state.state_vec;
+        
+        return ss.str();
+    }
 
 protected:
     Real _length;   // the length of the rod (z-axis dimension)
