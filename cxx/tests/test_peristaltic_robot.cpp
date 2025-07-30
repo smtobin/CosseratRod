@@ -5,24 +5,34 @@
 
 #include <chrono>
 
-#define N 25
+#define N 109
 
 int main()
 {
-    EllipseCrossSection rod_cs(0.25, 0.25);
-    EllipseCrossSection actuator_cs(0.22, 0.22);
+    EllipseCrossSection rod_cs(0.1, 0.1);
+    EllipseCrossSection actuator_cs(0.08, 0.08);
     Real rod_length = 2.0;
-    Real actuator_length = 0.7;
-    int num_actuators = 2;
+
+    Real h = rod_length / (N-1);
+    int num_segments_per_actuator = 2;
+    Real actuator_length = num_segments_per_actuator*h;
+    int num_actuators = (N-1) / (num_segments_per_actuator+2);
+
+    std::cout << "Num Actuators: " << num_actuators << std::endl;
 
     Real E = 1e5;
     Real nu = 0.45;
 
     PeristalticRobot<N> robot(rod_length, rod_cs, E, nu, num_actuators, actuator_length, actuator_cs);
 
-    std::vector<Real> actuation_pressures(num_actuators);
-    actuation_pressures[0] = 70e3;
-    actuation_pressures[1] = 70e3;
+    std::vector<Real> actuation_pressures(num_actuators, 0);
+    for (int i = 0; i < num_actuators; i++)
+    {
+        if (i % 2 == 0)
+            actuation_pressures[i] = 100e3;
+
+    }
+    
     // Real energy = robot.minimizationEnergy(actuation_pressures);
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -135,12 +145,12 @@ int main()
         }
 
         // fix the first actuator
-        nl[0] = 0; nl[1] = 0; nl[2] = 0;
-        nu[0] = 0; nu[1] = 0; nu[2] = 0;
+        // nl[0] = 0; nl[1] = 0; nl[2] = 0;
+        // nu[0] = 0; nu[1] = 0; nu[2] = 0;
 
         // fix the second actuator
-        nl[3] = 0; nl[4] = 0; nl[5] = 0;
-        nu[3] = 0; nu[4] = 0; nu[5] = 0;
+        // nl[3] = 0; nl[4] = 0; nl[5] = 0;
+        // nu[3] = 0; nu[4] = 0; nu[5] = 0;
 
         alglib::minnlcsetnlc2(state, nl, nu);
 

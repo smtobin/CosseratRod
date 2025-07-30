@@ -3,15 +3,20 @@
 #include "../alglib-cpp/src/optimization.h"
 #include "PeristalticRobotSimulator.hpp"
 
-#define N 25
+#define N 49
 
 int main()
 {
-    EllipseCrossSection rod_cs(0.25, 0.25);
-    EllipseCrossSection actuator_cs(0.22, 0.22);
+    EllipseCrossSection rod_cs(0.1, 0.1);
+    EllipseCrossSection actuator_cs(0.08, 0.08);
     Real rod_length = 2.0;
-    Real actuator_length = 0.7;
-    int num_actuators = 2;
+
+    Real h = rod_length / (N-1);
+    int num_segments_per_actuator = 2;
+    Real actuator_length = num_segments_per_actuator*h;
+    int num_actuators = (N-1) / (num_segments_per_actuator+2);
+
+    std::cout << "Num Actuators: " << num_actuators << std::endl;
 
     Real E = 1e5;
     Real nu = 0.45;
@@ -19,54 +24,37 @@ int main()
     PeristalticRobot<N> robot(rod_length, rod_cs, E, nu, num_actuators, actuator_length, actuator_cs);
 
     // set series of actuation pressures for the actuators
-    std::vector<Real> actuator1_pressures;
-    actuator1_pressures.push_back(0);
-    std::vector<Real> actuator2_pressures;
-    actuator2_pressures.push_back(0);
-    int num_cycles = 11;
-    for (int i = 0; i < num_cycles; i++)
+    std::vector<std::vector<Real>> actuator_pressures(num_actuators);
+    int num_cycles = 3;
+    int num_steps_per_cycle = (2*num_actuators);
+    int gap = 5;
+    int num_inflations_per_cycle = num_actuators / gap;
+    for (int a = 0; a < num_actuators; a++)
     {
-
-        if (i == 0)
-        {
-            // phase 1 (initial): actuator 1 expands to lock while actuator2 is unactuated
-            actuator1_pressures.push_back(25e3); actuator2_pressures.push_back(0);
-            actuator1_pressures.push_back(50e3); actuator2_pressures.push_back(0);
-            actuator1_pressures.push_back(70e3); actuator2_pressures.push_back(0);
-
-            // phase 2 (initial): actuator 1 pushes more
-            actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(0e3);
-            // actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(0e3);
-        }
-        else
-        {
-            // phase 1: actuator 1 expands to lock
-            actuator1_pressures.push_back(25e3); actuator2_pressures.push_back(70e3);
-            actuator1_pressures.push_back(50e3); actuator2_pressures.push_back(70e3);
-            actuator1_pressures.push_back(70e3); actuator2_pressures.push_back(70e3);
-
-            // phase 2: actuator 2 contracts while actuator 1 pushes more
-            actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(50e3);
-            actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(25e3);
-            actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(0e3);
-        }
-
-        // phase 3: actuator 2 expands to lock
-        actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(25e3);
-        actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(50e3);
-        actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(70e3);
-
-        // phase 4: actuator 1 contracts
-        // actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(70e3);
-        actuator1_pressures.push_back(75e3); actuator2_pressures.push_back(70e3);
-        actuator1_pressures.push_back(50e3); actuator2_pressures.push_back(70e3);
-        actuator1_pressures.push_back(25e3); actuator2_pressures.push_back(70e3);
-        actuator1_pressures.push_back(0e3); actuator2_pressures.push_back(70e3);
+        actuator_pressures[a].resize(num_cycles * num_steps_per_cycle, 0);
     }
 
-    std::vector<std::vector<Real>> actuator_pressures(num_actuators);
-    actuator_pressures[0] = actuator1_pressures;
-    actuator_pressures[1] = actuator2_pressures;
+    for (int ci = 0; ci < num_cycles; ci++)
+    {
+        for (int a = 0; a < num_actuators; a++)
+        {
+            for (int i = 0; i < num_inflations_per_cycle; i++)
+            {
+                int rm = a%gap;
+
+                int start = ci*num_steps_per_cycle + 2*rm + i*gap*2;
+                if (start + 4 >= num_cycles*num_steps_per_cycle)
+                    break;
+
+                actuator_pressures[a][start] = 70e3;
+                actuator_pressures[a][start + 1] = 160e3;
+                actuator_pressures[a][start + 2] = 220e3;
+                actuator_pressures[a][start + 3] = 220e3;
+                actuator_pressures[a][start + 4] = 70e3;
+            }
+            
+        }
+    }
 
     // set simulation parameters
     Real pipe_radius = rod_cs.rx()*1.2;
@@ -75,7 +63,7 @@ int main()
     PeristalticRobotSimulator sim(&robot, actuator_pressures, pipe_radius, critical_radius_ratio);
     std::vector<PeristalticRobot<N>::State> results = sim.runSimulation();
 
-    unsigned num_steps = actuator1_pressures.size();
+    unsigned num_steps = num_cycles * num_steps_per_cycle;
     for (int i = 0; i < num_steps; i++)
     {
         std::cout << "State " << i << ":\n" << results[i] << std::endl;

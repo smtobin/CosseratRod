@@ -43,25 +43,24 @@ public:
 
         assert(num_actuators*actuator_length < length);
 
-        // figure out the how many nodes each actuator should take up
+        // figure out the how many segments each actuator should take up
         Real h = length / (NumNodes_ - 1);
-        int num_nodes_per_actuator = std::round(actuator_length / h);
-        assert(num_nodes_per_actuator > 1);
+        int segments_per_actuator = std::round(actuator_length / h);
+        assert(segments_per_actuator >= 2);
         
-        Real actuator_spacing = (length - num_actuators*actuator_length) / (num_actuators+1);
-        int num_leftover_nodes = NumNodes_ - (num_nodes_per_actuator+1) * num_actuators;
-        assert(num_leftover_nodes >= num_actuators+1);
-        int num_cap_nodes = num_leftover_nodes / (num_actuators+1);
-        int num_center_nodes = (num_leftover_nodes - num_cap_nodes*2) / (num_actuators-1);
+        int num_leftover_segments = (NumNodes_-1) - segments_per_actuator * num_actuators;
+        assert(num_leftover_segments >= 2*num_actuators);
+        int num_cap_segments = 1;
+        int num_center_segments = (num_leftover_segments - num_cap_segments*2) / (num_actuators-1);
 
-        std::cout << "Num cap nodes: " << num_cap_nodes << " Num center nodes: " << num_center_nodes << std::endl;
+        std::cout << "Num cap segments: " << num_cap_segments << " Num center segments: " << num_center_segments << std::endl;
 
-        _actuator_intervals.push_back(std::make_pair(num_cap_nodes, num_cap_nodes+num_nodes_per_actuator));
+        _actuator_intervals.push_back(std::make_pair(num_cap_segments, num_cap_segments+segments_per_actuator));
         for (int i = 1; i < num_actuators; i++)
         {
             int prev_end = _actuator_intervals.back().second;
-            int start = (i==num_actuators-1) ? prev_end + num_center_nodes+1 : prev_end + (num_leftover_nodes - num_cap_nodes*2 - num_center_nodes*(num_actuators-2))+1;
-            _actuator_intervals.push_back(std::make_pair(start, start+num_nodes_per_actuator));
+            int start = (i!=num_actuators-1) ? prev_end + num_center_segments : prev_end + (num_leftover_segments - num_cap_segments*2 - num_center_segments*(num_actuators-2));
+            _actuator_intervals.push_back(std::make_pair(start, start+segments_per_actuator));
         }
 
         // TODO: figure out node spacing based on actuator intervals

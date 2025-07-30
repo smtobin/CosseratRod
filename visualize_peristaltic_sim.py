@@ -65,25 +65,21 @@ def readSimFromFolder(folder_path):
 
     return rod, actuator_pressures, positions, states
        
-
-def update_callback(step):
-    print(step)
-    time.sleep(1)
     
 
 def main():
     
 
     (rod, actuator_pressures, positions, states) = readSimFromFolder(SIM_FOLDER_PATH)
+
     rod_mesh = rod.asMesh(rod.n//2, positions[0])
-    rod_mesh.points += positions[0]
 
 
     ##########################################
     # Set up plotter
     ###########################################
     pl = pv.Plotter()
-    pl.camera.position = [0, -10, 1]
+    pl.camera.position = [0, -5, 1]
     pl.camera.focal_point = [0, 0, 0]
     pl.camera.clipping_range = (0.01, 1000.01)
 
@@ -127,7 +123,7 @@ def main():
             cross_section_meshes[i].shallow_copy(new_pv_cs_mesh)
 
         pl.render()
-        time.sleep(0.1)
+        time.sleep(1/5)
 
     time.sleep(10)
     pl.close()
