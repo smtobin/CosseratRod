@@ -21,8 +21,8 @@ int main()
     PeristalticRobot<N> robot(rod_length, rod_cs, E, nu, num_actuators, actuator_length, actuator_cs);
 
     std::vector<Real> actuation_pressures(num_actuators);
-    actuation_pressures[0] = 25e3;
-    actuation_pressures[1] = 0e3;
+    actuation_pressures[0] = 70e3;
+    actuation_pressures[1] = 70e3;
     // Real energy = robot.minimizationEnergy(actuation_pressures);
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -139,15 +139,15 @@ int main()
         nu[0] = 0; nu[1] = 0; nu[2] = 0;
 
         // fix the second actuator
-        // nl[3] = 0; nl[4] = 0; nl[5] = 0;
-        // nu[3] = 0; nu[4] = 0; nu[5] = 0;
+        nl[3] = 0; nl[4] = 0; nl[5] = 0;
+        nu[3] = 0; nu[4] = 0; nu[5] = 0;
 
         alglib::minnlcsetnlc2(state, nl, nu);
 
         // optimize
         std::vector<Vec3r> actuator_positions(num_actuators);
-        actuator_positions[0] = Vec3r(0,0,0);
-        actuator_positions[1] = Vec3r(0,0,3);
+        actuator_positions[0] = Vec3r(0,0,0.141973);
+        actuator_positions[1] = Vec3r(0,0,1.52716);
         PeristalticRobot_Optimization<N>::UserInfo info;
         info.robot = &robot;
         info.actuation_pressures = actuation_pressures;

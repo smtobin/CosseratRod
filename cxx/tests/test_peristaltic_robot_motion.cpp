@@ -23,7 +23,7 @@ int main()
     actuator1_pressures.push_back(0);
     std::vector<Real> actuator2_pressures;
     actuator2_pressures.push_back(0);
-    int num_cycles = 10;
+    int num_cycles = 11;
     for (int i = 0; i < num_cycles; i++)
     {
 
@@ -36,7 +36,7 @@ int main()
 
             // phase 2 (initial): actuator 1 pushes more
             actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(0e3);
-            actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(0e3);
+            // actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(0e3);
         }
         else
         {
@@ -47,17 +47,17 @@ int main()
 
             // phase 2: actuator 2 contracts while actuator 1 pushes more
             actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(50e3);
-            actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(25e3);
-            actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(0e3);
+            actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(25e3);
+            actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(0e3);
         }
 
         // phase 3: actuator 2 expands to lock
-        actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(25e3);
-        actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(50e3);
-        actuator1_pressures.push_back(110e3); actuator2_pressures.push_back(70e3);
+        actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(25e3);
+        actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(50e3);
+        actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(70e3);
 
         // phase 4: actuator 1 contracts
-        actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(70e3);
+        // actuator1_pressures.push_back(100e3); actuator2_pressures.push_back(70e3);
         actuator1_pressures.push_back(75e3); actuator2_pressures.push_back(70e3);
         actuator1_pressures.push_back(50e3); actuator2_pressures.push_back(70e3);
         actuator1_pressures.push_back(25e3); actuator2_pressures.push_back(70e3);

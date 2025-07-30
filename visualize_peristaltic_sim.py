@@ -64,30 +64,6 @@ def readSimFromFolder(folder_path):
             positions.append(position)
 
     return rod, actuator_pressures, positions, states
-
-def plotInitialModel(plotter, deformed_rod):
-
-    # get mesh from Cosserat rod class
-    rod_mesh = deformed_rod.asMesh()
-
-    rod_actor = plotter.add_mesh(rod_mesh, color=MODEL_COLOR, opacity=0.7, specular=1.0, smooth_shading=True, split_sharp_edges=True, show_edges=False)
-    # plot cross sections
-    deformed_xsections = deformed_rod.nodeCrossSectionPolyData()
-    cross_section_actors = []
-    cross_section_meshes = []
-    for xsection in deformed_xsections:
-        cross_section_meshes.append(xsection)
-        cs_actor = plotter.add_mesh(xsection, color=MODEL_COLOR, opacity=1.0, show_edges=True, edge_color='k')
-        cross_section_actors.append(cs_actor)
-
-    plotter.show()
-
-    new_rod_mesh = deformed_rod.asMesh()
-    new_rod_mesh.points[:,1] = 1
-    rod_mesh.shallow_copy(new_rod_mesh)
-    plotter.render()
-
-    return rod_mesh, cross_section_meshes, rod_actor, cross_section_actors
        
 
 def update_callback(step):
@@ -102,35 +78,54 @@ def main():
     rod_mesh = rod.asMesh(rod.n//2, positions[0])
     rod_mesh.points += positions[0]
 
-    
 
-    # plotter = pv.Plotter()
-    # (rod_mesh, cross_section_meshes, rod_actor, cross_section_actors) = plotInitialModel(plotter, rod)
-
-    # # plotter.show(auto_close=False, interactive_update=True)
-
-    # for step in range(len(states)):
-    #     rod.Z = states[step]
-    #     new_mesh = rod.asMesh()
-    #     rod_mesh.points = new_mesh.points
-    #     plotter.update()
-    #     time.sleep(1)
-
-    # plotter.close()
-
+    ##########################################
+    # Set up plotter
+    ###########################################
     pl = pv.Plotter()
-    pl.camera.position = [0, -10, 5]
+    pl.camera.position = [0, -10, 1]
+    pl.camera.focal_point = [0, 0, 0]
+    pl.camera.clipping_range = (0.01, 1000.01)
+
+    ############################################
+    # Create initial meshes (that will be updated each time step)
+    ############################################
+
+    # the rod
     pv_mesh = pv.PolyData(rod_mesh.points, faces=rod_mesh.faces)
     actor = pl.add_mesh(pv_mesh, color=MODEL_COLOR, opacity=0.7, specular=1.0)
+
+    # one for each cross section
+    xsections = rod.nodeCrossSectionPolyData(rod.n//2, positions[0])
+    cross_section_meshes = []
+    for i,xsection in enumerate(xsections):
+        pv_cs_mesh = pv.PolyData(xsection.points, faces=xsection.faces)
+        cross_section_meshes.append(pv_cs_mesh)
+        pl.add_mesh(cross_section_meshes[i], color=MODEL_COLOR, opacity=1.0, show_edges=True, edge_color='k')
+    
+    # start plotting
     pl.show(auto_close=False, interactive_update=True)
 
+
+    #########################################
+    # Animate through the sim states
+    #########################################
+
+    # loop through the simulation states and update the meshes
     for step in range(len(states)):
+        # update the rod state and get its new mesh
         rod.Z = states[step]
         new_rod_mesh = rod.asMesh(rod.n//2, positions[step])
-        new_rod_mesh.points += positions[step]
 
         new_pv_mesh = pv.PolyData(new_rod_mesh.points, faces=new_rod_mesh.faces)
         pv_mesh.shallow_copy(new_pv_mesh)
+
+        # update the cross section meshes
+        new_xsections = rod.nodeCrossSectionPolyData(rod.n//2, positions[step])
+        for i,xsection in enumerate(new_xsections):
+            new_pv_cs_mesh = pv.PolyData(xsection.points, faces=xsection.faces)
+            cross_section_meshes[i].shallow_copy(new_pv_cs_mesh)
+
         pl.render()
         time.sleep(0.1)
 
