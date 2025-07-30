@@ -989,7 +989,7 @@ class CosseratRod:
 
 
     # returns a list of 4x4 transformation matrices (starting with node 0, i.e. the base node) from the base to each node
-    def nodeTransforms(self):
+    def nodeTransforms(self, node_start=0, node_start_pos=[0,0,0]):
         h = self.L / (self.n-1)
 
         # extract variables
@@ -1007,23 +1007,26 @@ class CosseratRod:
         # create matrix for all vertices in the mesh
         vertices = np.zeros((3, num_xs_points*self.n))
 
-        transforms = []
+        transforms = [np.eye(4) for i in range(self.n)]
 
         g = np.eye(4)
-        transforms.append(g)
-        for i in range(self.n-1):
-            # extract rotation and position from transformation
-            R = g[0:3, 0:3]
-            p = g[0:3, 3]
-
+        g[0:3,3] = node_start_pos
+        transforms[node_start] = g
+        for i in range(node_start,self.n-1):
             # compute the transform from the base to node i+1
             g = np.matmul(g, utils.MatExp_se3([h*u1[i], h*u2[i], h*u3[i], h*v1[i], h*v2[i], h*v3[i]]))
 
-            transforms.append(g)
+            transforms[i+1] = g
+        
+        g = transforms[node_start]
+        for i in range(node_start-1,-1,-1):
+            g = np.matmul(g, utils.MatExp_se3([-h*u1[i], -h*u2[i], -h*u3[i], -h*v1[i], -h*v2[i], -h*v3[i]]))
+
+            transforms[i] = g
         
         return transforms
 
-    def asMesh(self):
+    def asMesh(self, node_start=0, node_start_pos=[0,0,0]):
         h = self.L / (self.n-1)
 
         # extract variables
@@ -1031,7 +1034,7 @@ class CosseratRod:
         b = self.Z[self.n:2*self.n]
         c = self.Z[2*self.n:3*self.n]
 
-        node_xsections = self.nodeCrossSectionPolyData()
+        node_xsections = self.nodeCrossSectionPolyData(node_start, node_start_pos)
         num_xs_points = node_xsections[0].points.shape[0] # number of points in each cross section
 
          # create matrix for all vertices in the mesh
@@ -1073,10 +1076,10 @@ class CosseratRod:
         return surf
 
     # returns the cross sections of the rod at each node along the rod as a pv.PolyData object
-    def nodeCrossSectionPolyData(self, scale_factor=1.0):
+    def nodeCrossSectionPolyData(self, node_start=0, node_start_pos=[0,0,0], scale_factor=1.0):
 
         # get transforms from base to each node
-        node_transforms = self.nodeTransforms()
+        node_transforms = self.nodeTransforms(node_start, node_start_pos)
 
         # create vertices for undeformed cross-section
         xsection_points = self.cross_section.meshPoints()

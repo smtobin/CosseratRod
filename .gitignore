@@ -2,3 +2,4 @@ __pycache__
 cxx/build
 LBFGSpp/
 alglib-cpp/
+cxx/output/

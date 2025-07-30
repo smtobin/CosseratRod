@@ -44,7 +44,7 @@ void PeristalticRobotSimulator<N>::_findCriticalPressures(Real pressure_incremen
             // check the max value of a
             Real max_a = _robot->state().a().maxCoeff();
 
-            if (max_a > _critical_radius_ratio)
+            if (max_a*_robot->crossSection()->rx() > _critical_radius_ratio*_pipe_radius)
             {
                 _critical_pressures[i] = actuation_pressures[i];
                 std::cout << "Critical pressure for actuator " << i << ": " << actuation_pressures[i] << " Pa" << std::endl;
@@ -63,7 +63,7 @@ std::vector<typename PeristalticRobot<N>::State> PeristalticRobotSimulator<N>::r
 {
     // create output vector
     int num_steps = _actuator_pressures[0].size();
-    std::vector<typename PeristalticRobot<N>::State> output(num_steps);
+    _states.resize(num_steps);
 
     int num_actuators = _robot->numActuators();
 
@@ -177,15 +177,15 @@ std::vector<typename PeristalticRobot<N>::State> PeristalticRobotSimulator<N>::r
 
         // std::cout << "Final state:\n" << x1.tostring(5).c_str() << std::endl;
 
-        output[step] = _robot->state();
+        _states[step] = _robot->state();
     }
     catch(alglib::ap_error alglib_exception)
     {
         std::cerr << alglib_exception.msg.c_str() << '\n';
-        return output;
+        return _states;
     }
 
-    return output;
+    return _states;
 }
 
 #endif // __PERISTALTIC_ROBOT_SIMULATOR_IMPL_HPP
