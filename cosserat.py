@@ -989,7 +989,7 @@ class CosseratRod:
 
 
     # returns a list of 4x4 transformation matrices (starting with node 0, i.e. the base node) from the base to each node
-    def nodeTransforms(self, node_start=0, node_start_pos=[0,0,0]):
+    def nodeTransforms(self, node_start=0, node_start_pos=[0,0,0], node_start_orientation=np.eye(3)):
         h = self.L / (self.n-1)
 
         # extract variables
@@ -1011,6 +1011,7 @@ class CosseratRod:
 
         g = np.eye(4)
         g[0:3,3] = node_start_pos
+        g[0:3,0:3] = node_start_orientation
         transforms[node_start] = g
         for i in range(node_start,self.n-1):
             # compute the transform from the base to node i+1
@@ -1026,7 +1027,7 @@ class CosseratRod:
         
         return transforms
 
-    def asMesh(self, node_start=0, node_start_pos=[0,0,0]):
+    def asMesh(self, node_start=0, node_start_pos=[0,0,0], node_start_orientation=np.eye(3)):
         h = self.L / (self.n-1)
 
         # extract variables
@@ -1034,7 +1035,7 @@ class CosseratRod:
         b = self.Z[self.n:2*self.n]
         c = self.Z[2*self.n:3*self.n]
 
-        node_xsections = self.nodeCrossSectionPolyData(node_start, node_start_pos)
+        node_xsections = self.nodeCrossSectionPolyData(node_start, node_start_pos, node_start_orientation)
         num_xs_points = node_xsections[0].points.shape[0] # number of points in each cross section
 
          # create matrix for all vertices in the mesh
@@ -1076,10 +1077,10 @@ class CosseratRod:
         return surf
 
     # returns the cross sections of the rod at each node along the rod as a pv.PolyData object
-    def nodeCrossSectionPolyData(self, node_start=0, node_start_pos=[0,0,0], scale_factor=1.0):
+    def nodeCrossSectionPolyData(self, node_start=0, node_start_pos=[0,0,0], node_orientation=np.eye(3), scale_factor=1.0):
 
         # get transforms from base to each node
-        node_transforms = self.nodeTransforms(node_start, node_start_pos)
+        node_transforms = self.nodeTransforms(node_start, node_start_pos, node_orientation)
 
         # create vertices for undeformed cross-section
         xsection_points = self.cross_section.meshPoints()

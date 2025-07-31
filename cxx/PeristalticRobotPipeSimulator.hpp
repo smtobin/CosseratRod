@@ -7,12 +7,12 @@
 #include <iomanip>
 
 template<int N>
-class PeristalticRobotSimulator
+class PeristalticRobotPipeSimulator
 {
 
 public:
 
-    PeristalticRobotSimulator(PeristalticRobot<N>* robot, const std::vector<std::vector<Real>>& actuator_pressures, Real pipe_radius, Real critical_radius_ratio)
+    PeristalticRobotPipeSimulator(PeristalticRobot<N>* robot, const std::vector<std::vector<Real>>& actuator_pressures, Real pipe_radius, Real critical_radius_ratio)
         : _robot(robot), _actuator_pressures(actuator_pressures), _pipe_radius(pipe_radius), _critical_radius_ratio(critical_radius_ratio)
     {
         assert(_actuator_pressures.size() == robot->numActuators());
@@ -73,7 +73,7 @@ private:
 
 };
 
-#include "PeristalticRobotSimulator.impl.hpp"
+#include "PeristalticRobotPipeSimulator.impl.hpp"
 
 
 #endif // __PERISTALTIC_ROBOT_SIMULATOR_HPP

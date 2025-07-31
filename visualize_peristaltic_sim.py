@@ -47,6 +47,7 @@ def readSimFromFolder(folder_path):
 
     actuator_pressures = []
     positions = []
+    orientations = []
     states = []
     for step_filename in filenames[1:]:
         with open(os.path.join(folder_path, step_filename)) as file:
@@ -58,30 +59,40 @@ def readSimFromFolder(folder_path):
             # extract rod state
             data = file.read()
             data_arr = data.split("\n")
-            state = np.array(data_arr[:-3]).astype(float)
-            position = np.array(data_arr[-3:]).astype(float)
+
+            expected_states = 9*N-6
+            state = np.array(data_arr[:expected_states]).astype(float)
+            position = np.array(data_arr[expected_states:expected_states+3]).astype(float)
+            if len(data_arr) > expected_states+3:
+                orientation = np.array(data_arr[expected_states+3:expected_states+6]).astype(float)
+            else:
+                orientation = np.array([0,0,0])
             states.append(state)
             positions.append(position)
+            orientations.append(utils.MatExp_so3(orientation/np.linalg.norm(orientation), np.linalg.norm(orientation)))
 
-    return rod, actuator_pressures, positions, states
+    return rod, actuator_pressures, positions, orientations, states
        
     
 
 def main():
     
 
-    (rod, actuator_pressures, positions, states) = readSimFromFolder(SIM_FOLDER_PATH)
+    (rod, actuator_pressures, positions, orientations, states) = readSimFromFolder(SIM_FOLDER_PATH)
 
-    rod_mesh = rod.asMesh(rod.n//2, positions[0])
+    rod_mesh = rod.asMesh(rod.n//2, positions[0], orientations[0])
 
 
     ##########################################
     # Set up plotter
     ###########################################
     pl = pv.Plotter()
-    pl.camera.position = [0, -5, 1]
+    pl.camera.position = [5, 0, 0.1]
     pl.camera.focal_point = [0, 0, 0]
     pl.camera.clipping_range = (0.01, 1000.01)
+
+    plane = pv.Plane()
+    pl.add_mesh(plane)
 
     ############################################
     # Create initial meshes (that will be updated each time step)
@@ -92,13 +103,14 @@ def main():
     actor = pl.add_mesh(pv_mesh, color=MODEL_COLOR, opacity=0.7, specular=1.0)
 
     # one for each cross section
-    xsections = rod.nodeCrossSectionPolyData(rod.n//2, positions[0])
+    xsections = rod.nodeCrossSectionPolyData(rod.n//2, positions[0], orientations[0])
     cross_section_meshes = []
     for i,xsection in enumerate(xsections):
         pv_cs_mesh = pv.PolyData(xsection.points, faces=xsection.faces)
         cross_section_meshes.append(pv_cs_mesh)
         pl.add_mesh(cross_section_meshes[i], color=MODEL_COLOR, opacity=1.0, show_edges=True, edge_color='k')
     
+    pl.add_floor()
     # start plotting
     pl.show(auto_close=False, interactive_update=True)
 
@@ -111,19 +123,19 @@ def main():
     for step in range(len(states)):
         # update the rod state and get its new mesh
         rod.Z = states[step]
-        new_rod_mesh = rod.asMesh(rod.n//2, positions[step])
+        new_rod_mesh = rod.asMesh(rod.n//2, positions[step], orientations[step])
 
         new_pv_mesh = pv.PolyData(new_rod_mesh.points, faces=new_rod_mesh.faces)
         pv_mesh.shallow_copy(new_pv_mesh)
 
         # update the cross section meshes
-        new_xsections = rod.nodeCrossSectionPolyData(rod.n//2, positions[step])
+        new_xsections = rod.nodeCrossSectionPolyData(rod.n//2, positions[step], orientations[step])
         for i,xsection in enumerate(new_xsections):
             new_pv_cs_mesh = pv.PolyData(xsection.points, faces=xsection.faces)
             cross_section_meshes[i].shallow_copy(new_pv_cs_mesh)
 
         pl.render()
-        time.sleep(1/5)
+        time.sleep(1/10)
 
     time.sleep(10)
     pl.close()

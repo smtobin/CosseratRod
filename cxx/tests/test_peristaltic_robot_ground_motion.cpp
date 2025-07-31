@@ -1,9 +1,9 @@
 #include "PeristalticRobot.hpp"
 #include "../LBFGSpp/include/LBFGS.h"   // TODO: change this path
 #include "../alglib-cpp/src/optimization.h"
-#include "PeristalticRobotSimulator.hpp"
+#include "PeristalticRobotGroundSimulator.hpp"
 
-#define N 109
+#define N 49
 
 int main()
 {
@@ -12,7 +12,7 @@ int main()
     Real rod_length = 2.0;
 
     Real h = rod_length / (N-1);
-    int num_segments_per_actuator = 4;
+    int num_segments_per_actuator = 2;
     Real actuator_length = num_segments_per_actuator*h;
     int num_actuators = (N-1) / (num_segments_per_actuator+2);
 
@@ -22,12 +22,16 @@ int main()
     Real nu = 0.45;
 
     PeristalticRobot<N> robot(rod_length, rod_cs, E, nu, num_actuators, actuator_length, actuator_cs);
+    PeristalticRobot<N>::State initial_state = robot.state();
+    initial_state.set_p(Vec3r(0,0,rod_cs.rx()));
+    initial_state.set_ori(Vec3r(-M_PI/2,0,0));
+    robot.setState(initial_state);
 
     // set series of actuation pressures for the actuators
     std::vector<std::vector<Real>> actuator_pressures(num_actuators);
-    int num_cycles = 3;
+    int num_cycles = 5;
     int num_steps_per_cycle = (2*num_actuators);
-    int gap = 5;
+    int gap = 4;
     for (int a = 0; a < num_actuators; a++)
     {
         actuator_pressures[a].resize(num_cycles * num_steps_per_cycle, 0);
@@ -35,16 +39,16 @@ int main()
 
     for (int a = 0; a < num_actuators; a++)
     {
-        int ind = 2*(a%gap);
+        int ind = (a%gap);
         while (ind+4 < num_cycles*num_steps_per_cycle)
         {
-            actuator_pressures[a][ind++] = 70e3;
-            actuator_pressures[a][ind++] = 160e3;
-            actuator_pressures[a][ind++] = 220e3;
-            actuator_pressures[a][ind++] = 220e3;
-            actuator_pressures[a][ind++] = 70e3;
+            actuator_pressures[a][ind++] = 0e3;
+            actuator_pressures[a][ind++] = 30e3;
+            actuator_pressures[a][ind++] = 75e3;
+            actuator_pressures[a][ind++] = 30e3;
+            actuator_pressures[a][ind++] = 0e3;
 
-            ind += 2*(gap-2);
+            ind += (gap-5);
         }
     }
 
@@ -52,7 +56,7 @@ int main()
     Real pipe_radius = rod_cs.rx()*1.2;
     Real critical_radius_ratio = 1.25;
 
-    PeristalticRobotSimulator sim(&robot, actuator_pressures, pipe_radius, critical_radius_ratio);
+    PeristalticRobotGroundSimulator sim(&robot, actuator_pressures);
     std::vector<PeristalticRobot<N>::State> results = sim.runSimulation();
 
     unsigned num_steps = num_cycles * num_steps_per_cycle;

@@ -138,9 +138,15 @@ public:
     /** Computes the gradient of the tip position w.r.t. the rod state. */
     // TipPositionGradientType tipPositionGradient() const;
 
+    int actuatorNode(int actuator_index) const
+    {
+        return (_actuator_intervals[actuator_index].first + _actuator_intervals[actuator_index].second)/2;
+    }
+
     Vec3r actuatorPosition(int actuator_index) const;
 
     Vec3r actuatorPosition(int actuator_index,
+        const Vec3r& center_orientation,
         const typename State::StrainVarVecType& v1,
         const typename State::StrainVarVecType& v2,
         const typename State::StrainVarVecType& v3,
@@ -149,6 +155,20 @@ public:
         const typename State::StrainVarVecType& u3) const;
 
     PositionGradientType actuatorPositionGradient(int actuator_index) const;
+
+    std::vector<Vec3r> nodePositions() const;
+
+    std::vector<Vec3r> nodePositions(
+        const Vec3r& center_position,
+        const Vec3r& center_orientation,
+        const typename State::StrainVarVecType& v1,
+        const typename State::StrainVarVecType& v2,
+        const typename State::StrainVarVecType& v3,
+        const typename State::StrainVarVecType& u1,
+        const typename State::StrainVarVecType& u2,
+        const typename State::StrainVarVecType& u3) const;
+
+    std::vector<PositionGradientType> nodePositionGradients() const;
 
     void printNodePositions() const;
 
@@ -252,7 +272,7 @@ struct PeristalticRobot_Optimization
         std::vector<Vec3r> actuation_positions;
     };
 
-    static void func(const alglib::real_1d_array& x, alglib::real_1d_array& fi, alglib::real_2d_array& jac, void* ptr)
+    static void pipe_func(const alglib::real_1d_array& x, alglib::real_1d_array& fi, alglib::real_2d_array& jac, void* ptr)
     {
         UserInfo* info = static_cast<UserInfo*>(ptr);
         PeristalticRobot<N>* robot = info->robot;
@@ -288,6 +308,63 @@ struct PeristalticRobot_Optimization
             }
         }
 
+    }
+
+    static void ground_func(const alglib::real_1d_array& x, alglib::real_1d_array& fi, alglib::real_2d_array& jac, void* ptr)
+    {
+        UserInfo* info = static_cast<UserInfo*>(ptr);
+        PeristalticRobot<N>* robot = info->robot;
+        
+        using StateVecType = typename PeristalticRobot<N>::State::StateVecType;
+        const StateVecType state = Eigen::Map<const StateVecType>(x.getcontent());
+        robot->setState(state);
+
+        typename PeristalticRobot<N>::EnergyGradientType grad = robot->minimizationEnergyGradient(info->actuation_pressures);
+        Real energy = robot->minimizationEnergy(info->actuation_pressures);
+
+        // set optimization function and its gradient
+        fi[0] = energy;
+
+        int num_states = PeristalticRobot<N>::State::NumStates;
+        for (int i = 0; i < num_states; i++)
+            jac[0][i] = grad[i];
+
+        // get actuator position constraint functions and their gradients w.r.t state
+        Real radius = robot->crossSection()->ry();
+        for (int a = 0; a < robot->numActuators(); a++)
+        {
+            Vec3r pos = robot->actuatorPosition(a);
+            Vec3r pos_diff = (pos - info->actuation_positions[a]);
+            Real z_diff = (pos[2] - state[PeristalticRobot<N>::State::bStart+robot->actuatorNode(a)]*radius);
+            fi[a*3 + 1] = pos_diff[0];
+            fi[a*3 + 2] = pos_diff[1];
+            fi[a*3 + 3] = z_diff;
+            typename PeristalticRobot<N>::PositionGradientType pos_grad = robot->actuatorPositionGradient(a);
+            for (int i = 0; i < num_states; i++)
+            {
+                jac[a*3 + 1][i] = pos_grad(0,i);
+                jac[a*3 + 2][i] = pos_grad(1,i);
+                jac[a*3 + 3][i] = pos_grad(2,i);
+            }
+            // TODO: incorporate dependence on b
+        }
+
+        // get node above-ground constraint functions and their gradients w.r.t state
+        // std::vector<Vec3r> node_positions = robot->nodePositions();
+        // std::vector<typename PeristalticRobot<N>::PositionGradientType> node_position_gradients = robot->nodePositionGradients();
+        // Real radius = robot->crossSection()->ry();
+        // for (int i = 0; i < N; i++)
+        // {
+        //     int func_ind = 3*robot->numActuators()+1 + i;
+        //     Real z_diff = (node_positions[i][2] - state[PeristalticRobot<N>::State::bStart+i]*radius - 0);
+        //     fi[func_ind] = z_diff;
+
+        //     for (int j = 0; j < num_states; j++)
+        //     {
+        //         jac[func_ind][j] = node_position_gradients[i](2,j);
+        //     }
+        //     jac[func_ind][PeristalticRobot<N>::State::bStart+i] = -radius;
+        // }
     }
 };
 

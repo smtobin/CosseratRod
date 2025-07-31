@@ -11,11 +11,12 @@ Vec3r PeristalticRobot<N>::actuatorPosition(int actuator_index) const
     const typename State::StrainVarVecType u2 = _state.u2();
     const typename State::StrainVarVecType u3 = _state.u3();
 
-    return actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+    return actuatorPosition(actuator_index, _state.ori(), v1, v2, v3, u1, u2, u3);
 }
 
 template<int N>
 Vec3r PeristalticRobot<N>::actuatorPosition(int actuator_index,
+        const Vec3r& center_ori,
         const typename State::StrainVarVecType& v1,
         const typename State::StrainVarVecType& v2,
         const typename State::StrainVarVecType& v3,
@@ -26,12 +27,14 @@ Vec3r PeristalticRobot<N>::actuatorPosition(int actuator_index,
     int actuator_node = (_actuator_intervals[actuator_index].first + _actuator_intervals[actuator_index].second)/2;
     // std::cout << "Actuator " << actuator_index << " node index: " << actuator_node << std::endl;
     Vec3r center_position = _state.p();
+    Mat3r center_orientation = Math::Exp_so3(center_ori);
 
     if (actuator_node == _center_node)
         return center_position;
     
     Mat4r T = Mat4r::Identity();
     T.block<3,1>(0,3) = center_position;
+    T.block<3,3>(0,0) = center_orientation;
 
     // integrate forwards from the center
     if (actuator_node > _center_node)
@@ -75,8 +78,19 @@ typename PeristalticRobot<N>::PositionGradientType PeristalticRobot<N>::actuator
     typename State::StrainVarVecType u1 = _state.u1();
     typename State::StrainVarVecType u2 = _state.u2();
     typename State::StrainVarVecType u3 = _state.u3();
+    Vec3r ori = _state.ori();
 
-    Vec3r orig_pos = actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+    Vec3r orig_pos = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+
+    // gradient of actuator pos w.r.t. center node orientation
+    // const Real theta_delta = 1e-6;
+    // for (int i = 0; i < 3; i++)
+    // {
+    //     ori[i] += theta_delta;
+    //     Vec3r ori_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+    //     grad.col(State::orStart + i) = (ori_tip - orig_pos) / theta_delta;
+    //     ori[i] -= theta_delta;
+    // }
 
     /** TODO: don't need to do every single u and v, just the ones between the center and the actuator */
     const Real v_delta = 1e-5;
@@ -85,43 +99,178 @@ typename PeristalticRobot<N>::PositionGradientType PeristalticRobot<N>::actuator
     {
         // vary v1
         v1[i] += v_delta;
-        Vec3r v1_tip = actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+        Vec3r v1_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
         grad.col(State::v1Start + i) = (v1_tip - orig_pos) / v_delta;
         v1[i] -= v_delta;
 
         // vary v2
         v2[i] += v_delta;
-        Vec3r v2_tip = actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+        Vec3r v2_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
         grad.col(State::v2Start + i) = (v2_tip - orig_pos) / v_delta;
         v2[i] -= v_delta;
 
         // vary v3
         v3[i] += v_delta;
-        Vec3r v3_tip = actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+        Vec3r v3_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
         grad.col(State::v3Start + i) = (v3_tip - orig_pos) / v_delta;
         v3[i] -= v_delta;
 
         // vary u1
         u1[i] += u_delta;
-        Vec3r u1_tip = actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+        Vec3r u1_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
         grad.col(State::u1Start + i) = (u1_tip - orig_pos) / u_delta;
         u1[i] -= u_delta;
 
         // vary u2
         u2[i] += u_delta;
-        Vec3r u2_tip = actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+        Vec3r u2_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
         grad.col(State::u2Start + i) = (u2_tip - orig_pos) / u_delta;
         u2[i] -= u_delta;
 
         // vary u3
         u3[i] += u_delta;
-        Vec3r u3_tip = actuatorPosition(actuator_index, v1, v2, v3, u1, u2, u3);
+        Vec3r u3_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
         grad.col(State::u3Start + i) = (u3_tip - orig_pos) / u_delta;
         u3[i] -= u_delta;
 
     }
 
     return grad;
+}
+
+template<int N>
+std::vector<Vec3r> PeristalticRobot<N>::nodePositions() const
+{
+    return nodePositions(_state.p(), _state.ori(), _state.v1(), _state.v2(), _state.v3(), _state.u1(), _state.u2(), _state.u3());
+}
+
+template<int N>
+std::vector<Vec3r> PeristalticRobot<N>::nodePositions(
+    const Vec3r& center_position,
+    const Vec3r& center_ori,
+    const typename State::StrainVarVecType& v1,
+    const typename State::StrainVarVecType& v2,
+    const typename State::StrainVarVecType& v3,
+    const typename State::StrainVarVecType& u1,
+    const typename State::StrainVarVecType& u2,
+    const typename State::StrainVarVecType& u3) const
+{
+    std::vector<Vec3r> positions(N);
+    Mat3r center_orientation = Math::Exp_so3(center_ori);
+    
+    Mat4r T = Mat4r::Identity();
+    T.block<3,1>(0,3) = center_position;
+    T.block<3,3>(0,0) = center_orientation;
+
+    positions[_center_node] = center_position;
+    // integrate forwards from the center
+    for (int i = _center_node; i < N-1; i++)
+    {
+        Real h = _node_locations[i+1] - _node_locations[i];
+        T = T * Math::Exp_se3( h*Vec6r(u1[i], u2[i], u3[i], v1[i], v2[i], v3[i]));
+
+        positions[i+1] = T.block<3,1>(0,3);
+    }
+    
+    // integrate backwards from the center
+    for (int i = _center_node; i > 0; i--)
+    {
+        Real h = _node_locations[i-1] - _node_locations[i]; // h is negative since we are going backwards
+        T = T * Math::Exp_se3( h*Vec6r(u1[i-1], u2[i-1], u3[i-1], v1[i-1], v2[i-1], v3[i-1]));
+
+        positions[i-1] = T.block<3,1>(0,3);
+    }
+    
+
+    return positions;
+}
+
+template <int N>
+std::vector<typename PeristalticRobot<N>::PositionGradientType> PeristalticRobot<N>::nodePositionGradients() const
+{
+    std::vector<PositionGradientType> grads(N, PositionGradientType::Zero());
+
+    // gradient of actuator position w.r.t center position is just identity
+    for (int i = 0; i < N; i++)
+    {
+        grads[i].template block<3,3>(0, State::pStart) = Mat3r::Identity();
+    }
+    
+
+    // gradient of tip position w.r.t a,b,c is 0
+
+    typename State::StrainVarVecType v1 = _state.v1();
+    typename State::StrainVarVecType v2 = _state.v2();
+    typename State::StrainVarVecType v3 = _state.v3();
+    typename State::StrainVarVecType u1 = _state.u1();
+    typename State::StrainVarVecType u2 = _state.u2();
+    typename State::StrainVarVecType u3 = _state.u3();
+    Vec3r p = _state.p();
+    Vec3r ori = _state.ori();
+
+    std::vector<Vec3r> orig_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+
+    // gradient of node positions w.r.t. center node orientation
+    const Real theta_delta = 1e-6;
+    for (int i = 0; i < 3; i++)
+    {
+        ori[i] += theta_delta;
+        std::vector<Vec3r> ori_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+        for (int j = 0; j < N; j++)
+        {
+            grads[j].col(State::orStart + i) = (ori_positions[j] - orig_positions[j]) / theta_delta;
+        }
+        ori[i] -= theta_delta;
+    }
+
+    /** TODO: don't need to do every single u and v, just the ones between the center and the actuator */
+    const Real v_delta = 1e-5;
+    const Real u_delta = 1e-6;
+    for (int i = 0; i < N-1; i++)
+    {
+        // vary v1
+        v1[i] += v_delta;
+        std::vector<Vec3r> v1_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+        v1[i] -= v_delta;
+
+        // vary v2
+        v2[i] += v_delta;
+        std::vector<Vec3r> v2_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+        v2[i] -= v_delta;
+
+        // vary v3
+        v3[i] += v_delta;
+        std::vector<Vec3r> v3_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+        v3[i] -= v_delta;
+
+        // vary u1
+        u1[i] += u_delta;
+        std::vector<Vec3r> u1_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+        u1[i] -= u_delta;
+
+        // vary u2
+        u2[i] += u_delta;
+        std::vector<Vec3r> u2_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+        u2[i] -= u_delta;
+
+        // vary u3
+        u3[i] += u_delta;
+        std::vector<Vec3r> u3_positions = nodePositions(p, ori, v1, v2, v3, u1, u2, u3);
+        u3[i] -= u_delta;
+
+        for (int j = 0; j < N; j++)
+        {
+            grads[j].col(State::v1Start + i) = (v1_positions[j] - orig_positions[j]) / v_delta;
+            grads[j].col(State::v2Start + i) = (v2_positions[j] - orig_positions[j]) / v_delta;
+            grads[j].col(State::v3Start + i) = (v3_positions[j] - orig_positions[j]) / v_delta;
+            grads[j].col(State::u1Start + i) = (u1_positions[j] - orig_positions[j]) / u_delta;
+            grads[j].col(State::u2Start + i) = (u2_positions[j] - orig_positions[j]) / u_delta;
+            grads[j].col(State::u3Start + i) = (u3_positions[j] - orig_positions[j]) / u_delta;
+        }
+
+    }
+
+    return grads;
 }
 
 template<int N>

@@ -167,7 +167,7 @@ int main()
         alglib::minnlcreport rep;
         alglib::real_1d_array x1;
         t_start = std::chrono::high_resolution_clock::now();
-        alglib::minnlcoptimize(state, PeristalticRobot_Optimization<N>::func, nullptr, &info);
+        alglib::minnlcoptimize(state, PeristalticRobot_Optimization<N>::pipe_func, nullptr, &info);
         t_end = std::chrono::high_resolution_clock::now();
         time_ms = std::chrono::duration_cast<std::chrono::nanoseconds>(t_end - t_start).count() / 1.0e6;
         std::cout << "Elapsed time for optimization: " << time_ms << " ms" << std::endl;

@@ -54,5 +54,8 @@ target_link_libraries(TestPeristalticRobot Eigen3::Eigen AlglibOptimization)
 add_executable(TestAlglib tests/test_alglib.cpp)
 target_link_libraries(TestAlglib Eigen3::Eigen AlglibOptimization)
 
-add_executable(TestPeristalticRobotMotion tests/test_peristaltic_robot_motion.cpp)
-target_link_libraries(TestPeristalticRobotMotion Eigen3::Eigen AlglibOptimization)
+add_executable(TestPeristalticRobotPipeMotion tests/test_peristaltic_robot_pipe_motion.cpp)
+target_link_libraries(TestPeristalticRobotPipeMotion Eigen3::Eigen AlglibOptimization)
+
+add_executable(TestPeristalticRobotGroundMotion tests/test_peristaltic_robot_ground_motion.cpp)
+target_link_libraries(TestPeristalticRobotGroundMotion Eigen3::Eigen AlglibOptimization)
