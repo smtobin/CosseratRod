@@ -3,7 +3,7 @@
 #include "../alglib-cpp/src/optimization.h"
 #include "PeristalticRobotSimulator.hpp"
 
-#define N 49
+#define N 109
 
 int main()
 {
@@ -12,7 +12,7 @@ int main()
     Real rod_length = 2.0;
 
     Real h = rod_length / (N-1);
-    int num_segments_per_actuator = 2;
+    int num_segments_per_actuator = 4;
     Real actuator_length = num_segments_per_actuator*h;
     int num_actuators = (N-1) / (num_segments_per_actuator+2);
 
@@ -28,31 +28,23 @@ int main()
     int num_cycles = 3;
     int num_steps_per_cycle = (2*num_actuators);
     int gap = 5;
-    int num_inflations_per_cycle = num_actuators / gap;
     for (int a = 0; a < num_actuators; a++)
     {
         actuator_pressures[a].resize(num_cycles * num_steps_per_cycle, 0);
     }
 
-    for (int ci = 0; ci < num_cycles; ci++)
+    for (int a = 0; a < num_actuators; a++)
     {
-        for (int a = 0; a < num_actuators; a++)
+        int ind = 2*(a%gap);
+        while (ind+4 < num_cycles*num_steps_per_cycle)
         {
-            for (int i = 0; i < num_inflations_per_cycle; i++)
-            {
-                int rm = a%gap;
+            actuator_pressures[a][ind++] = 70e3;
+            actuator_pressures[a][ind++] = 160e3;
+            actuator_pressures[a][ind++] = 220e3;
+            actuator_pressures[a][ind++] = 220e3;
+            actuator_pressures[a][ind++] = 70e3;
 
-                int start = ci*num_steps_per_cycle + 2*rm + i*gap*2;
-                if (start + 4 >= num_cycles*num_steps_per_cycle)
-                    break;
-
-                actuator_pressures[a][start] = 70e3;
-                actuator_pressures[a][start + 1] = 160e3;
-                actuator_pressures[a][start + 2] = 220e3;
-                actuator_pressures[a][start + 3] = 220e3;
-                actuator_pressures[a][start + 4] = 70e3;
-            }
-            
+            ind += 2*(gap-2);
         }
     }
 
