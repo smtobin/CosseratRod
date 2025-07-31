@@ -7,7 +7,7 @@ import pyvista as pv
 import copy
 import numpy as np
 
-ROD_FILENAME = "cxx/output/peristaltic.txt"
+ROD_FILENAME = "cxx/output/peristaltic_bending.txt"
 
 MODEL_COLOR = [255, 130, 0]
 

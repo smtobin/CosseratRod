@@ -12,7 +12,7 @@ int main()
     Real rod_length = 2.0;
 
     Real h = rod_length / (N-1);
-    int num_segments_per_actuator = 2;
+    int num_segments_per_actuator = 4;
     Real actuator_length = num_segments_per_actuator*h;
     int num_actuators = (N-1) / (num_segments_per_actuator+2);
 
