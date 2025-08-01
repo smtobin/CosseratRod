@@ -21,6 +21,7 @@ public:
 
     // typedef for gradient of tip position w.r.t. the state
     using PositionGradientType = Eigen::Matrix<Real, 3, State::NumStates>;
+    using PositionAndOrientationGradientType = Eigen::Matrix<Real, 6, State::NumStates>;
     // typedef for gradient of energy w.r.t. the state
     using EnergyGradientType = Eigen::Vector<Real, State::NumStates>;   
 
@@ -137,6 +138,19 @@ public:
 
     PositionGradientType actuatorPositionGradient(int actuator_index) const;
 
+    Vec6r actuatorPositionAndOrientation(int actuator_index) const;
+
+    Vec6r actuatorPositionAndOrientation(int actuator_index,
+        const Vec3r& center_orientation,
+        const typename State::StrainVarVecType& v1,
+        const typename State::StrainVarVecType& v2,
+        const typename State::StrainVarVecType& v3,
+        const typename State::StrainVarVecType& u1,
+        const typename State::StrainVarVecType& u2,
+        const typename State::StrainVarVecType& u3) const;
+
+    PositionAndOrientationGradientType actuatorPositionAndOrientationGradient(int actuator_index) const;
+
     std::vector<Vec3r> nodePositions() const;
 
     std::vector<Vec3r> nodePositions(
@@ -251,8 +265,8 @@ struct PeristalticBendingRobot_Optimization
     struct UserInfo
     {
         PeristalticBendingRobot<N>* robot;
-        std::vector<Real> actuation_pressures;
-        std::vector<Vec3r> actuation_positions;
+        std::vector<Vec2r> actuation_pressures;
+        std::vector<Vec6r> actuation_positions;
     };
 
     static void ground_func(const alglib::real_1d_array& x, alglib::real_1d_array& fi, alglib::real_2d_array& jac, void* ptr)
@@ -275,23 +289,46 @@ struct PeristalticBendingRobot_Optimization
             jac[0][i] = grad[i];
 
         // get actuator position constraint functions and their gradients w.r.t state
+        // Real radius = robot->crossSection()->ry();
+        // for (int a = 0; a < robot->numActuators(); a++)
+        // {
+        //     Vec3r pos = robot->actuatorPosition(a);
+        //     Vec3r pos_diff = (pos - info->actuation_positions[a]);
+        //     fi[a*3 + 1] = pos_diff[0];
+        //     fi[a*3 + 2] = pos_diff[1];
+        //     fi[a*3 + 3] = pos_diff[2];
+        //     typename PeristalticBendingRobot<N>::PositionGradientType pos_grad = robot->actuatorPositionGradient(a);
+        //     for (int i = 0; i < num_states; i++)
+        //     {
+        //         jac[a*3 + 1][i] = pos_grad(0,i);
+        //         jac[a*3 + 2][i] = pos_grad(1,i);
+        //         jac[a*3 + 3][i] = pos_grad(2,i);
+        //     }
+        // }
+
         Real radius = robot->crossSection()->ry();
         for (int a = 0; a < robot->numActuators(); a++)
         {
-            Vec3r pos = robot->actuatorPosition(a);
-            Vec3r pos_diff = (pos - info->actuation_positions[a]);
-            Real z_diff = (pos[2] - state[PeristalticBendingRobot<N>::State::bStart+robot->actuatorNode(a)]*radius);
-            fi[a*3 + 1] = pos_diff[0];
-            fi[a*3 + 2] = pos_diff[1];
-            fi[a*3 + 3] = z_diff;
-            typename PeristalticBendingRobot<N>::PositionGradientType pos_grad = robot->actuatorPositionGradient(a);
+            Vec6r pos = robot->actuatorPositionAndOrientation(a);
+            Vec6r pos_diff = (pos - info->actuation_positions[a]);
+            fi[a*6 + 1] = pos_diff[0];
+            fi[a*6 + 2] = pos_diff[1];
+            fi[a*6 + 3] = pos_diff[2];
+            fi[a*6 + 4] = pos_diff[3];
+            fi[a*6 + 5] = pos_diff[4];
+            fi[a*6 + 6] = pos_diff[5];
+            typename PeristalticBendingRobot<N>::PositionAndOrientationGradientType pos_grad 
+                = robot->actuatorPositionAndOrientationGradient(a);
+
             for (int i = 0; i < num_states; i++)
             {
-                jac[a*3 + 1][i] = pos_grad(0,i);
-                jac[a*3 + 2][i] = pos_grad(1,i);
-                jac[a*3 + 3][i] = pos_grad(2,i);
+                jac[a*6 + 1][i] = pos_grad(0,i);
+                jac[a*6 + 2][i] = pos_grad(1,i);
+                jac[a*6 + 3][i] = pos_grad(2,i);
+                jac[a*6 + 4][i] = pos_grad(3,i);
+                jac[a*6 + 5][i] = pos_grad(4,i);
+                jac[a*6 + 6][i] = pos_grad(5,i);
             }
-            // TODO: incorporate dependence on b
         }
 
         // get node above-ground constraint functions and their gradients w.r.t state

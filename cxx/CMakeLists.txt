@@ -64,3 +64,6 @@ target_link_libraries(TestPeristalticRobotGroundMotion Eigen3::Eigen AlglibOptim
 
 add_executable(TestPeristalticBendingRobot tests/test_peristaltic_bending_robot.cpp)
 target_link_libraries(TestPeristalticBendingRobot Eigen3::Eigen AlglibOptimization)
+
+add_executable(TestPeristalticBendingRobotGroundMotion tests/test_peristaltic_bending_robot_ground_motion.cpp)
+target_link_libraries(TestPeristalticBendingRobotGroundMotion Eigen3::Eigen AlglibOptimization)

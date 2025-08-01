@@ -84,14 +84,18 @@ typename PeristalticBendingRobot<N>::PositionGradientType PeristalticBendingRobo
     Vec3r orig_pos = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
 
     // gradient of actuator pos w.r.t. center node orientation
-    // const Real theta_delta = 1e-6;
-    // for (int i = 0; i < 3; i++)
-    // {
-    //     ori[i] += theta_delta;
-    //     Vec3r ori_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
-    //     grad.col(State::orStart + i) = (ori_tip - orig_pos) / theta_delta;
-    //     ori[i] -= theta_delta;
-    // }
+    const Real theta_delta = 1e-6;
+    for (int i = 0; i < 3; i++)
+    {
+        // only populate the gradient w.r.t rotation about z-axis
+        // if (i == 2)
+        // {
+            ori[i] += theta_delta;
+            Vec3r ori_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+            grad.col(State::orStart + i) = (ori_tip - orig_pos) / theta_delta;
+            ori[i] -= theta_delta;
+        // }
+    }
 
     /** TODO: don't need to do every single u and v, just the ones between the center and the actuator */
     const Real v_delta = 1e-5;
@@ -99,16 +103,16 @@ typename PeristalticBendingRobot<N>::PositionGradientType PeristalticBendingRobo
     for (int i = 0; i < N-1; i++)
     {
         // vary v1
-        v1[i] += v_delta;
-        Vec3r v1_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
-        grad.col(State::v1Start + i) = (v1_tip - orig_pos) / v_delta;
-        v1[i] -= v_delta;
+        // v1[i] += v_delta;
+        // Vec3r v1_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::v1Start + i) = (v1_tip - orig_pos) / v_delta;
+        // v1[i] -= v_delta;
 
         // vary v2
-        v2[i] += v_delta;
-        Vec3r v2_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
-        grad.col(State::v2Start + i) = (v2_tip - orig_pos) / v_delta;
-        v2[i] -= v_delta;
+        // v2[i] += v_delta;
+        // Vec3r v2_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::v2Start + i) = (v2_tip - orig_pos) / v_delta;
+        // v2[i] -= v_delta;
 
         // vary v3
         v3[i] += v_delta;
@@ -117,10 +121,10 @@ typename PeristalticBendingRobot<N>::PositionGradientType PeristalticBendingRobo
         v3[i] -= v_delta;
 
         // vary u1
-        u1[i] += u_delta;
-        Vec3r u1_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
-        grad.col(State::u1Start + i) = (u1_tip - orig_pos) / u_delta;
-        u1[i] -= u_delta;
+        // u1[i] += u_delta;
+        // Vec3r u1_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::u1Start + i) = (u1_tip - orig_pos) / u_delta;
+        // u1[i] -= u_delta;
 
         // vary u2
         u2[i] += u_delta;
@@ -129,10 +133,154 @@ typename PeristalticBendingRobot<N>::PositionGradientType PeristalticBendingRobo
         u2[i] -= u_delta;
 
         // vary u3
-        u3[i] += u_delta;
-        Vec3r u3_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
-        grad.col(State::u3Start + i) = (u3_tip - orig_pos) / u_delta;
-        u3[i] -= u_delta;
+        // u3[i] += u_delta;
+        // Vec3r u3_tip = actuatorPosition(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::u3Start + i) = (u3_tip - orig_pos) / u_delta;
+        // u3[i] -= u_delta;
+
+    }
+
+    return grad;
+}
+
+template<int N>
+Vec6r PeristalticBendingRobot<N>::actuatorPositionAndOrientation(int actuator_index) const
+{
+    const typename State::StrainVarVecType v1 = _state.v1();
+    const typename State::StrainVarVecType v2 = _state.v2();
+    const typename State::StrainVarVecType v3 = _state.v3();
+    const typename State::StrainVarVecType u1 = _state.u1();
+    const typename State::StrainVarVecType u2 = _state.u2();
+    const typename State::StrainVarVecType u3 = _state.u3();
+
+    return actuatorPositionAndOrientation(actuator_index, _state.ori(), v1, v2, v3, u1, u2, u3);
+}
+
+template<int N>
+Vec6r PeristalticBendingRobot<N>::actuatorPositionAndOrientation(int actuator_index,
+        const Vec3r& center_ori,
+        const typename State::StrainVarVecType& v1,
+        const typename State::StrainVarVecType& v2,
+        const typename State::StrainVarVecType& v3,
+        const typename State::StrainVarVecType& u1,
+        const typename State::StrainVarVecType& u2,
+        const typename State::StrainVarVecType& u3) const
+{
+    int actuator_node = (_actuator_intervals[actuator_index].first + _actuator_intervals[actuator_index].second)/2;
+    // std::cout << "Actuator " << actuator_index << " node index: " << actuator_node << std::endl;
+    Vec3r center_position = _state.p();
+    Mat3r center_orientation = Math::Exp_so3(center_ori);
+
+    if (actuator_node == _center_node)
+        return Vec6r(center_position[0], center_position[1], center_position[2], center_ori[0], center_ori[1], center_ori[2]);
+    
+    Mat4r T = Mat4r::Identity();
+    T.block<3,1>(0,3) = center_position;
+    T.block<3,3>(0,0) = center_orientation;
+
+    // integrate forwards from the center
+    if (actuator_node > _center_node)
+    {
+        for (int i = _center_node; i < actuator_node; i++)
+        {
+            Real h = _node_locations[i+1] - _node_locations[i];
+            T = T * Math::Exp_se3( h*Vec6r(u1[i], u2[i], u3[i], v1[i], v2[i], v3[i]));
+        }
+    }
+    // integrate backwards from the center
+    else
+    {
+        for (int i = _center_node; i > actuator_node; i--)
+        {
+            Real h = _node_locations[i-1] - _node_locations[i]; // h is negative since we are going backwards
+            T = T * Math::Exp_se3( h*Vec6r(u1[i-1], u2[i-1], u3[i-1], v1[i-1], v2[i-1], v3[i-1]));
+        }
+    }
+
+    Vec3r pos = T.block<3,1>(0,3);
+    Vec3r ori = Math::Log_SO3(T.block<3,3>(0,0));
+    Vec6r result(pos[0], pos[1], pos[2], ori[0], ori[1], ori[2]);
+
+    // std::cout << "Actuator " << actuator_index << " position: " << pos.transpose() << std::endl;
+    return result;
+}
+
+template<int N>
+typename PeristalticBendingRobot<N>::PositionAndOrientationGradientType
+PeristalticBendingRobot<N>::actuatorPositionAndOrientationGradient(int actuator_index) const
+{
+
+    PositionAndOrientationGradientType grad = PositionAndOrientationGradientType::Zero();
+
+    // gradient of actuator position w.r.t center position is just identity
+    grad.template block<3,3>(0, State::pStart) = Mat3r::Identity();
+
+    // gradient of tip position w.r.t a,b,c is 0
+
+    typename State::StrainVarVecType v1 = _state.v1();
+    typename State::StrainVarVecType v2 = _state.v2();
+    typename State::StrainVarVecType v3 = _state.v3();
+    typename State::StrainVarVecType u1 = _state.u1();
+    typename State::StrainVarVecType u2 = _state.u2();
+    typename State::StrainVarVecType u3 = _state.u3();
+    Vec3r ori = _state.ori();
+
+    Vec6r orig_pos = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+
+    // gradient of actuator pos w.r.t. center node orientation
+    const Real theta_delta = 1e-6;
+    for (int i = 0; i < 3; i++)
+    {
+        // only populate the gradient w.r.t rotation about z-axis
+        // if (i == 2)
+        // {
+            ori[i] += theta_delta;
+            Vec6r ori_tip = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+            grad.col(State::orStart + i) = (ori_tip - orig_pos) / theta_delta;
+            ori[i] -= theta_delta;
+        // }
+    }
+
+    /** TODO: don't need to do every single u and v, just the ones between the center and the actuator */
+    const Real v_delta = 1e-5;
+    const Real u_delta = 1e-6;
+    for (int i = 0; i < N-1; i++)
+    {
+        // vary v1
+        // v1[i] += v_delta;
+        // Vec6r v1_tip = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::v1Start + i) = (v1_tip - orig_pos) / v_delta;
+        // v1[i] -= v_delta;
+
+        // vary v2
+        // v2[i] += v_delta;
+        // Vec6r v2_tip = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::v2Start + i) = (v2_tip - orig_pos) / v_delta;
+        // v2[i] -= v_delta;
+
+        // vary v3
+        v3[i] += v_delta;
+        Vec6r v3_tip = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        grad.col(State::v3Start + i) = (v3_tip - orig_pos) / v_delta;
+        v3[i] -= v_delta;
+
+        // vary u1
+        // u1[i] += u_delta;
+        // Vec6r u1_tip = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::u1Start + i) = (u1_tip - orig_pos) / u_delta;
+        // u1[i] -= u_delta;
+
+        // vary u2
+        u2[i] += u_delta;
+        Vec6r u2_tip = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        grad.col(State::u2Start + i) = (u2_tip - orig_pos) / u_delta;
+        u2[i] -= u_delta;
+
+        // vary u3
+        // u3[i] += u_delta;
+        // Vec6r u3_tip = actuatorPositionAndOrientation(actuator_index, ori, v1, v2, v3, u1, u2, u3);
+        // grad.col(State::u3Start + i) = (u3_tip - orig_pos) / u_delta;
+        // u3[i] -= u_delta;
 
     }
 
@@ -295,49 +443,6 @@ void PeristalticBendingRobot<N>::printNodePositions() const
     }
 }
 
-// template <int N>
-// Real PeristalticBendingRobot<N>::actuatorVolume(int actuator_index,
-//         const typename State::CrossSectionVarVecType& a,
-//         const typename State::CrossSectionVarVecType& b,
-//         const typename State::CrossSectionVarVecType& c,
-//         const typename State::StrainVarVecType& v1,
-//         const typename State::StrainVarVecType& v2,
-//         const typename State::StrainVarVecType& v3,
-//         const typename State::StrainVarVecType& u1,
-//         const typename State::StrainVarVecType& u2,
-//         const typename State::StrainVarVecType& u3) const
-// {
-//     Real actuator_volume = 0;
-//     const Real A_act = _actuator_cross_section.A0();
-//     for (int i = 0; i < N-1; i++)
-//     {
-//         Real h = _node_locations[i+1] - _node_locations[i];
-
-//         // cross-sectional parameters at midpoint between nodes
-//         const Real a_mid = 0.5*(a[i] + a[i+1]);
-//         const Real b_mid = 0.5*(b[i] + b[i+1]);
-//         const Real c_mid = 0.5*(c[i] + c[i+1]);
-
-//         // check if we need to increment the actuator index
-//         if (i >= _actuator_intervals[actuator_index].second)
-//             break;
-
-//         // check and see if we are at a segment that is spanned by a pneumatic actuator
-//         std::pair<int,int> actuator_interval = _actuator_intervals[actuator_index];
-//         if (i >= actuator_interval.first && i < actuator_interval.second)
-//         {
-//             // calculate current volume of pneumatic actuator
-//             actuator_volume += h * (a_mid*b_mid - c_mid*c_mid) * A_act;
-//         }
-//         else
-//         {
-//             // if not move on to the next node
-//             continue;
-//         }
-//     }
-
-//     return actuator_volume;
-// }
 
 template <int N>
 Real PeristalticBendingRobot<N>::minimizationEnergy(const std::vector<Vec2r>& actuation_pressures) const
@@ -566,8 +671,8 @@ typename PeristalticBendingRobot<N>::EnergyGradientType PeristalticBendingRobot<
                 h * (a_mid*b_mid - c_mid*c_mid) * A_act * -actuation_pressures[current_actuator_index][1];
 
             energy_grad[State::u2Start + i] +=
-                h * (a_mid*b_mid - c_mid*c_mid) * _actuator_x * -actuation_pressures[current_actuator_index][0] +
-                h * (a_mid*b_mid - c_mid*c_mid) * -_actuator_x * -actuation_pressures[current_actuator_index][1];
+                h * (a_mid*b_mid - c_mid*c_mid) * _actuator_x * A_act * -actuation_pressures[current_actuator_index][0] +
+                h * (a_mid*b_mid - c_mid*c_mid) * -_actuator_x * A_act * -actuation_pressures[current_actuator_index][1];
         }
         else
         {
@@ -589,13 +694,13 @@ typename PeristalticBendingRobot<N>::EnergyGradientType PeristalticBendingRobot<
         Vec3r u_vec(u1[i], u2[i], u3[i]);
         Vec3r strain_vec(a_mid-1, b_mid-1, v3[i]-1);
 
-        energy_grad[State::v1Start + i] += h * G * A * v1[i];
-        energy_grad[State::v2Start + i] += h * G * A * v2[i];
+        // energy_grad[State::v1Start + i] += h * G * A * v1[i];
+        // energy_grad[State::v2Start + i] += h * G * A * v2[i];
         energy_grad[State::v3Start + i] += h * A * Vec3r(0,0,1).transpose() * M_mat * strain_vec;
-        energy_grad[State::u1Start + i] += h * Vec3r(1,0,0).transpose() * K_mat * u_vec;
+        // energy_grad[State::u1Start + i] += h * Vec3r(1,0,0).transpose() * K_mat * u_vec;
         energy_grad[State::u2Start + i] += h * Vec3r(0,1,0).transpose() * K_mat * u_vec;
-        energy_grad[State::u3Start + i] += h * Vec3r(0,0,1).transpose() * K_mat * u_vec +
-            2*G*( (a_mid*c_prime - a_prime*c_mid)*Iy - (b_mid*c_prime - b_prime*c_mid)*Ix );
+        // energy_grad[State::u3Start + i] += h * Vec3r(0,0,1).transpose() * K_mat * u_vec +
+        //     2*G*( (a_mid*c_prime - a_prime*c_mid)*Iy - (b_mid*c_prime - b_prime*c_mid)*Ix );
         
 
         Mat3r dKmat_da;
