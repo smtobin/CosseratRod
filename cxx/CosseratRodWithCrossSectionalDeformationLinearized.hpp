@@ -25,8 +25,8 @@ public:
 public:
     // constructor accepts any type of cross section
     template<typename CrossSectionType_>
-    CosseratRodWithCrossSectionalDeformationLinearized(Real length, const CrossSectionType_& cross_section, Real E, Real nu, bool constrain_base=true, bool constrain_tip=false)
-        : Base(length, cross_section, E, nu, constrain_base, constrain_tip)
+    CosseratRodWithCrossSectionalDeformationLinearized(Real length, const CrossSectionType_& cross_section, Real E, Real nu, bool constrain_base=true, bool constrain_tip=false, bool bending_correction=true)
+        : Base(length, cross_section, E, nu, constrain_base, constrain_tip), _bending_correction(bending_correction)
     {   
     }
 
@@ -40,6 +40,11 @@ public:
      * Used by LBFGS to minimize the energy.
      */
     virtual EnergyGradientType minimizationEnergyGradient(const Vec3r& applied_tip_force) const override;
+
+    bool bendingCorrection() const { return _bending_correction; }
+
+private:
+    bool _bending_correction;
 };
 #include "CosseratRodWithCrossSectionalDeformationLinearized.impl.hpp"
 

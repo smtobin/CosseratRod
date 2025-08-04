@@ -206,6 +206,56 @@ Vec6r PeristalticBendingRobot<N>::actuatorPositionAndOrientation(int actuator_in
 }
 
 template<int N>
+Vec6r PeristalticBendingRobot<N>::actuatorBasePositionAndOrientation(int actuator_index) const
+{
+    const typename State::StrainVarVecType v1 = _state.v1();
+    const typename State::StrainVarVecType v2 = _state.v2();
+    const typename State::StrainVarVecType v3 = _state.v3();
+    const typename State::StrainVarVecType u1 = _state.u1();
+    const typename State::StrainVarVecType u2 = _state.u2();
+    const typename State::StrainVarVecType u3 = _state.u3();
+    Vec3r center_ori = _state.ori();
+
+    int actuator_node = (_actuator_intervals[actuator_index].first);
+    // std::cout << "Actuator " << actuator_index << " node index: " << actuator_node << std::endl;
+    Vec3r center_position = _state.p();
+    Mat3r center_orientation = Math::Exp_so3(center_ori);
+
+    if (actuator_node == _center_node)
+        return Vec6r(center_position[0], center_position[1], center_position[2], center_ori[0], center_ori[1], center_ori[2]);
+    
+    Mat4r T = Mat4r::Identity();
+    T.block<3,1>(0,3) = center_position;
+    T.block<3,3>(0,0) = center_orientation;
+
+    // integrate forwards from the center
+    if (actuator_node > _center_node)
+    {
+        for (int i = _center_node; i < actuator_node; i++)
+        {
+            Real h = _node_locations[i+1] - _node_locations[i];
+            T = T * Math::Exp_se3( h*Vec6r(u1[i], u2[i], u3[i], v1[i], v2[i], v3[i]));
+        }
+    }
+    // integrate backwards from the center
+    else
+    {
+        for (int i = _center_node; i > actuator_node; i--)
+        {
+            Real h = _node_locations[i-1] - _node_locations[i]; // h is negative since we are going backwards
+            T = T * Math::Exp_se3( h*Vec6r(u1[i-1], u2[i-1], u3[i-1], v1[i-1], v2[i-1], v3[i-1]));
+        }
+    }
+
+    Vec3r pos = T.block<3,1>(0,3);
+    Vec3r ori = Math::Log_SO3(T.block<3,3>(0,0));
+    Vec6r result(pos[0], pos[1], pos[2], ori[0], ori[1], ori[2]);
+
+    // std::cout << "Actuator " << actuator_index << " position: " << pos.transpose() << std::endl;
+    return result;
+}
+
+template<int N>
 typename PeristalticBendingRobot<N>::PositionAndOrientationGradientType
 PeristalticBendingRobot<N>::actuatorPositionAndOrientationGradient(int actuator_index) const
 {

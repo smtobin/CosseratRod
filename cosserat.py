@@ -1603,6 +1603,37 @@ class LinearDeformationCosseratRod:
         # y_dir = end_transform[0:3,1]
         # return p + x_dir * deformed_ab_coords[0] * self.cross_section.rx  + y_dir * deformed_ab_coords[1] * self.cross_section.ry
 
+    ## given: an array of (s, a, b) coordinates
+    # where s: [0,1] ; 0 is base, 1 is tip
+    #       x: x-coordinate in cross-section plane
+    #       y: y-coordinate in cross-section plane
+    def positionsFromCosseratCoords(self, cosserat_coords):
+        node_transforms = self.nodeTransforms()
+
+        positions = np.zeros( (len(cosserat_coords), 3) )
+
+        for i, (s,x,y) in enumerate(cosserat_coords):
+            below_node = int(np.floor(s*(self.n-1)))
+            if below_node == self.n-1:
+                above_node = below_node
+                interp_factor = 0
+            else:
+                above_node = below_node + 1
+                interp_factor = s*(self.n-1) - below_node
+
+            below_transform = node_transforms[below_node]
+            above_transform = node_transforms[above_node]
+
+            # just do linear interpolation (as a first pass)
+            p = (1-interp_factor)*below_transform[0:3, 3] + interp_factor*above_transform[0:3, 3]
+            R = (1-interp_factor)*below_transform[0:3, 0:3] + interp_factor*above_transform[0:3, 0:3]
+            C = (1-interp_factor)*self.nodeDistortionMatrix(below_node, x, y) + interp_factor*self.nodeDistortionMatrix(above_node, x, y)
+            r = np.array([x, y, 0])
+
+            positions[i] = p + np.matmul(np.matmul(R, C), r)
+        
+        return positions
+
 
 ##############################################################################
 # Cosserat rod with internal hollow pressurized chamber

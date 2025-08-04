@@ -20,6 +20,29 @@ Vec3r CosseratRod_Base<N, State>::tipPosition(  Real h,
     return T.block<3,1>(0,3);
 }
 
+template <int N, typename State>
+Vec3r CosseratRod_Base<N, State>::nodePosition(Real h, int node_index,
+                                    const Vec3r& base_position,
+                                    const Mat3r& base_orientation,
+                                    const typename State::StrainVarVecType& v1,
+                                    const typename State::StrainVarVecType& v2,
+                                    const typename State::StrainVarVecType& v3,
+                                    const typename State::StrainVarVecType& u1,
+                                    const typename State::StrainVarVecType& u2,
+                                    const typename State::StrainVarVecType& u3)
+{
+
+    Mat4r T = Mat4r::Identity();
+    T.block<3,3>(0,0) = base_orientation;
+    T.block<3,1>(0,3) = base_position;
+    for (int i = 0; i < node_index; i++)
+    {
+        T = T * Math::Exp_se3( h*Vec6r(u1[i], u2[i], u3[i], v1[i], v2[i], v3[i]));
+    }
+
+    return T.block<3,1>(0,3);
+}
+
 template<int N, typename State>
 Vec3r CosseratRod_Base<N, State>::tipPosition() const
 {

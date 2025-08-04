@@ -253,6 +253,32 @@ def getDeformedMeshFromNastranData(undeformed_mesh, undeformed_nodes_filename, n
 
     return deformed_mesh
 
+def getNodesNastran(undeformed_nodes_filename, node_displacements_filename):
+    # load the original nodes from the .csv file
+    nodes_loaded_data = np.genfromtxt(undeformed_nodes_filename, delimiter=',', dtype=None) # use dtype=None to read different types
+    undeformed_nodes = np.zeros((len(nodes_loaded_data), 3), dtype=float)
+    # the nodal coordinates are in columns 3, 4, and 5
+    for i,row in enumerate(nodes_loaded_data):
+        vert = np.array([row[3], row[4], row[5]])
+        undeformed_nodes[i,:] = vert
+
+    # load nodal displacements from the .csv file
+    disp_loaded_data = np.genfromtxt(node_displacements_filename, delimiter=',', dtype=None)
+    node_displacements = np.zeros((len(nodes_loaded_data), 3), dtype=float)
+    # the nodal displacement coordinates are in columns 4, 5, and 6
+    for i,row in enumerate(disp_loaded_data):
+        disp = float(row[6])
+        node_num = int(row[5]) - 1
+        if "T1" in row[3]:
+            node_displacements[node_num, 0] = disp
+        elif "T2" in row[3]:
+            node_displacements[node_num, 1] = disp
+        elif "T3" in row[3]:
+            node_displacements[node_num, 2] = disp
+    
+    deformed_nodes = undeformed_nodes + node_displacements
+    return undeformed_nodes, deformed_nodes
+
 def loadRodFromFile(filename):
     with open(filename, 'r') as file:
         data = file.read()

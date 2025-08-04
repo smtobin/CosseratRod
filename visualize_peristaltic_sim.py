@@ -12,7 +12,7 @@ import numpy as np
 
 ROD_FILENAME = "cxx/output/peristaltic.txt"
 SIM_FOLDER_PATH = "cxx/output/sim"
-# SIM_FOLDER_PATH = "cxx/output/N=49_bent_sim"
+# SIM_FOLDER_PATH = "cxx/output/N=49_bent_sim5"
 
 MODEL_COLOR = [255, 130, 0]
 
@@ -88,7 +88,7 @@ def main():
     # Set up plotter
     ###########################################
     pl = pv.Plotter()
-    pl.camera.position = [0, 0.1, 5]
+    pl.camera.position = [0, 0.1, 10]
     pl.camera.focal_point = [0, 0, 0]
     pl.camera.clipping_range = (0.01, 1000.01)
 

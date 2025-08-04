@@ -200,16 +200,16 @@ def _facePlaneIntersection(vertices, face, plane_normal, plane_point):
 #   x=x-coordinate of point in cross-section plane 
 #   y=y-coordinate of point in cross-section plane
 # This assumes the undeformed mesh is a straight rod with axis in the positive z direction.
-def getCosseratCoordsForMeshVertices(undeformed_mesh):
-    cosserat_coords = np.zeros(( len(undeformed_mesh.vertices), 3) )
+def getCosseratCoordsForMeshVertices(vertices):
+    cosserat_coords = np.zeros(( len(vertices), 3) )
 
-    min_x = np.min(undeformed_mesh.vertices[:,0])
-    max_x = np.max(undeformed_mesh.vertices[:,0])
-    min_y = np.min(undeformed_mesh.vertices[:,1])
-    max_y = np.max(undeformed_mesh.vertices[:,1])
-    min_z = np.min(undeformed_mesh.vertices[:,2])
-    max_z = np.max(undeformed_mesh.vertices[:,2])
-    for i,vert in enumerate(undeformed_mesh.vertices):
+    min_x = np.min(vertices[:,0])
+    max_x = np.max(vertices[:,0])
+    min_y = np.min(vertices[:,1])
+    max_y = np.max(vertices[:,1])
+    min_z = np.min(vertices[:,2])
+    max_z = np.max(vertices[:,2])
+    for i,vert in enumerate(vertices):
         s = (vert[2] - min_z) / (max_z - min_z)
         x = (vert[0] - 0.5*(min_x+max_x))
         y = (vert[1] - 0.5*(min_y+max_y))
@@ -218,20 +218,20 @@ def getCosseratCoordsForMeshVertices(undeformed_mesh):
     
     return cosserat_coords
 
-def meshRodVertexError(undeformed_mesh, deformed_mesh, undeformed_rod, deformed_rod):
-    mesh_cosserat_coords = getCosseratCoordsForMeshVertices(undeformed_mesh)
+def meshRodVertexError(undeformed_vertices, deformed_vertices, undeformed_rod, deformed_rod):
+    mesh_cosserat_coords = getCosseratCoordsForMeshVertices(undeformed_vertices)
 
     undeformed_rod_positions = undeformed_rod.positionsFromCosseratCoords(mesh_cosserat_coords)
     deformed_rod_positions = deformed_rod.positionsFromCosseratCoords(mesh_cosserat_coords)
 
     deformed_errors = np.zeros((len(mesh_cosserat_coords),1))
-    for i,vert in enumerate(deformed_mesh.vertices):
+    for i,vert in enumerate(deformed_vertices):
         deformed_errors[i] = np.linalg.norm(vert-deformed_rod_positions[i])
     
-    max_z = np.max(undeformed_mesh.vertices[:,2])
-    min_z = np.min(undeformed_mesh.vertices[:,2])
+    max_z = np.max(undeformed_vertices[:,2])
+    min_z = np.min(undeformed_vertices[:,2])
     undeformed_errors = np.zeros((len(mesh_cosserat_coords),1))
-    for i,vert in enumerate(undeformed_mesh.vertices):
+    for i,vert in enumerate(undeformed_vertices):
         # if vert[2] != min_z:
         #     continue
         undeformed_errors[i] = np.linalg.norm(vert-undeformed_rod_positions[i])

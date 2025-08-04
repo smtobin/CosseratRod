@@ -3,13 +3,13 @@
 #include "../alglib-cpp/src/optimization.h"
 #include "PeristalticBendingRobotGroundSimulator.hpp"
 
-#define N 15
+#define N 49
 
 int main()
 {
     EllipseCrossSection rod_cs(0.1, 0.1);
     EllipseCrossSection actuator_cs(0.035, 0.08);
-    Real rod_length = 1.0;
+    Real rod_length = 2.0;
 
     Real h = rod_length / (N-1);
     int num_segments_per_actuator = 4;
@@ -33,93 +33,93 @@ int main()
 
     // assuming 2 actuators
     // actuator 1 - always straight
-    int num_cycles = 20;
-    int ns = 4;
-    for (int i = 0; i < num_cycles; i++)
-    {
-        // if (i%2 == 0)
-        // {
-            actuator_pressures[0].push_back(Vec2r(75e3, 100e3));         actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
-            actuator_pressures[0].push_back(Vec2r(125e3, 155e3));       actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
-            actuator_pressures[0].push_back(Vec2r(45e3, 65e3));       actuator_pressures[1].push_back(Vec2r(100e3, 100e3));
-            
-        // }
-        // else
-        // {
-        //     actuator_pressures[0].push_back(Vec2r(100e3, 100e3));       actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
-        //     actuator_pressures[0].push_back(Vec2r(160e3, 160e3));       actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
-        //     actuator_pressures[0].push_back(Vec2r(60e3, 60e3));       actuator_pressures[1].push_back(Vec2r(100e3, 100e3));
-        // }
-        // actuator_pressures[0].push_back(Vec2r(120e3, 120e3));       actuator_pressures[1].push_back(Vec2r(45e3, 75e3));
-    }
-
-
-    // int num_cycles = 5;
-    // int num_steps_per_cycle = (2*num_actuators);
-    // int gap = 6;
-    // for (int a = 0; a < num_actuators; a++)
+    // int num_cycles = 20;
+    // int ns = 4;
+    // for (int i = 0; i < num_cycles; i++)
     // {
-    //     actuator_pressures[a].resize(num_cycles * num_steps_per_cycle, Vec2r(0e3, 20e3));
-    // }
-
-    // for (int a = 0; a < num_actuators; a++)
-    // {
-    //     int ind = (a%gap);
-    //     while (ind+4 < num_cycles*num_steps_per_cycle)
-    //     {
-    //         actuator_pressures[a][ind++] = Vec2r(0e3, 20e3);
-    //         actuator_pressures[a][ind++] = Vec2r(50e3, 80e3);
-    //         actuator_pressures[a][ind++] = Vec2r(120e3, 160e3);
-    //         actuator_pressures[a][ind++] = Vec2r(50e3, 80e3);
-    //         actuator_pressures[a][ind++] = Vec2r(0e3, 20e3);
-    //         // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
-    //         // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
-    //         // actuator_pressures[a][ind++] = Vec2r(150e3, 150e3);
-    //         // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
-    //         // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
-
-    //         ind += (gap-5);
-    //     }
-    //     // if (a <= num_actuators/2)
+    //     // if (i%2 == 0)
     //     // {
-    //     //     for (int i = 0; i < num_cycles*num_steps_per_cycle; i++)
-    //     //     {
-    //     //         actuator_pressures[a][i] = Vec2r(0e3, 20e3);
-    //     //     }
-    //     //     while (ind+4 < num_cycles*num_steps_per_cycle)
-    //     //     {
-    //     //         actuator_pressures[a][ind++] = Vec2r(0e3, 20e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(60e3, 80e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(120e3, 140e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(60e3, 80e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(0e3, 20e3);
-    //     //         // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
-    //     //         // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
-    //     //         // actuator_pressures[a][ind++] = Vec2r(150e3, 150e3);
-    //     //         // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
-    //     //         // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
-
-    //     //         ind += (gap-5);
-    //     //     }
+    //         // actuator_pressures[0].push_back(Vec2r(75e3, 100e3));         actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
+    //         // actuator_pressures[0].push_back(Vec2r(125e3, 155e3));       actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
+    //         // actuator_pressures[0].push_back(Vec2r(45e3, 65e3));       actuator_pressures[1].push_back(Vec2r(100e3, 100e3));
+            
     //     // }
     //     // else
     //     // {
-    //     //     // for (int i = 0; i < num_cycles*num_steps_per_cycle; i++)
-    //     //     // {
-    //     //     //     actuator_pressures[a][i] = Vec2r(120e3, 120e3);
-    //     //     // }
-    //     //     while (ind+4 < num_cycles*num_steps_per_cycle)
-    //     //     {
-    //     //         actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(80e3, 80e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(140e3, 140e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(80e3, 80e3);
-    //     //         actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
-
-    //     //         ind += (gap-5);
-    //     //     }
+    //     //     actuator_pressures[0].push_back(Vec2r(100e3, 100e3));       actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
+    //     //     actuator_pressures[0].push_back(Vec2r(160e3, 160e3));       actuator_pressures[1].push_back(Vec2r(50e3, 50e3));
+    //     //     actuator_pressures[0].push_back(Vec2r(60e3, 60e3));       actuator_pressures[1].push_back(Vec2r(100e3, 100e3));
     //     // }
+    //     // actuator_pressures[0].push_back(Vec2r(120e3, 120e3));       actuator_pressures[1].push_back(Vec2r(45e3, 75e3));
     // }
+
+
+    int num_cycles = 5;
+    int num_steps_per_cycle = (2*num_actuators);
+    int gap = 6;
+    for (int a = 0; a < num_actuators; a++)
+    {
+        actuator_pressures[a].resize(num_cycles * num_steps_per_cycle, Vec2r(0e3, 9e3));
+    }
+
+    for (int a = 0; a < num_actuators; a++)
+    {
+        int ind = (a%gap);
+        while (ind+4 < num_cycles*num_steps_per_cycle)
+        {
+            actuator_pressures[a][ind++] = Vec2r(0e3, 9e3);
+            actuator_pressures[a][ind++] = Vec2r(50e3, 59.5e3);
+            actuator_pressures[a][ind++] = Vec2r(100e3, 110e3);
+            actuator_pressures[a][ind++] = Vec2r(50e3, 59.5e3);
+            actuator_pressures[a][ind++] = Vec2r(0e3, 9e3);
+            // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
+            // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
+            // actuator_pressures[a][ind++] = Vec2r(150e3, 150e3);
+            // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
+            // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
+
+            ind += (gap-5);
+        }
+        // if (a <= num_actuators/2)
+        // {
+        //     for (int i = 0; i < num_cycles*num_steps_per_cycle; i++)
+        //     {
+        //         actuator_pressures[a][i] = Vec2r(0e3, 20e3);
+        //     }
+        //     while (ind+4 < num_cycles*num_steps_per_cycle)
+        //     {
+        //         actuator_pressures[a][ind++] = Vec2r(0e3, 20e3);
+        //         actuator_pressures[a][ind++] = Vec2r(60e3, 80e3);
+        //         actuator_pressures[a][ind++] = Vec2r(120e3, 140e3);
+        //         actuator_pressures[a][ind++] = Vec2r(60e3, 80e3);
+        //         actuator_pressures[a][ind++] = Vec2r(0e3, 20e3);
+        //         // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
+        //         // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
+        //         // actuator_pressures[a][ind++] = Vec2r(150e3, 150e3);
+        //         // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
+        //         // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
+
+        //         ind += (gap-5);
+        //     }
+        // }
+        // else
+        // {
+        //     // for (int i = 0; i < num_cycles*num_steps_per_cycle; i++)
+        //     // {
+        //     //     actuator_pressures[a][i] = Vec2r(120e3, 120e3);
+        //     // }
+        //     while (ind+4 < num_cycles*num_steps_per_cycle)
+        //     {
+        //         actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
+        //         actuator_pressures[a][ind++] = Vec2r(80e3, 80e3);
+        //         actuator_pressures[a][ind++] = Vec2r(140e3, 140e3);
+        //         actuator_pressures[a][ind++] = Vec2r(80e3, 80e3);
+        //         actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
+
+        //         ind += (gap-5);
+        //     }
+        // }
+    }
 
     // set simulation parameters
     PeristalticBendingRobotGroundSimulator sim(&robot, actuator_pressures);

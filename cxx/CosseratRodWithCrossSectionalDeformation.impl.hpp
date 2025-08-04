@@ -19,7 +19,7 @@ Real CosseratRodWithCrossSectionalDeformation<N>::minimizationEnergy(const Vec3r
     const typename State::StrainVarVecType u2 = this->_state.u2();
     const typename State::StrainVarVecType u3 = this->_state.u3();
 
-    const Real E = this->_E;
+    const Real E = this->_bending_correction ? this->_E : this->_M;
     const Real G = this->_G;
     const Real A = this->_cross_section->A0();
     const Real Ix = this->_cross_section->Ix();
@@ -103,7 +103,7 @@ typename CosseratRodWithCrossSectionalDeformation<N>::EnergyGradientType Cossera
     const typename State::StrainVarVecType u2 = this->_state.u2();
     const typename State::StrainVarVecType u3 = this->_state.u3();
 
-    const Real E = this->_E;
+    const Real E = this->_bending_correction ? this->_E : this->_M;
     const Real G = this->_G;
     const Real A = this->_cross_section->A0();
     const Real Ix = this->_cross_section->Ix();

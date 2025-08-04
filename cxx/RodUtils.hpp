@@ -81,9 +81,17 @@ struct RodUtils
         if constexpr (std::is_same_v<RodType, CosseratRod<RodType::NumNodes>>)
             rod_type = "Rod";
         if constexpr (std::is_same_v<RodType, CosseratRodWithCrossSectionalDeformation<RodType::NumNodes>>)
-            rod_type = "RodCSD";
+        {
+            if (rod.bendingCorrection())
+                rod_type = "RodCSD";
+            else
+                rod_type = "RodCSD_NoBendingCorrection";
+        }
         if constexpr (std::is_same_v<RodType, CosseratRodWithCrossSectionalDeformationLinearized<RodType::NumNodes>>)
-            rod_type = "RodCSDLin";
+            if (rod.bendingCorrection())
+                rod_type = "RodCSDLin";
+            else
+                rod_type = "RodCSDLin_NoBendingCorrection";
         if constexpr (std::is_same_v<RodType, CosseratRodWithLinearModesOfCrossSectionalDeformation<RodType::NumNodes>>)
             rod_type = "RodCSDLinModes";
         
