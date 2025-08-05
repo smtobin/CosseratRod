@@ -5,16 +5,16 @@
 
 #include <chrono>
 
-#define N 7
+#define N 5
 
-Real findCorrespondingHighPressureForCurvature(PeristalticBendingRobot<N>* robot, Real low_pressure, Real desired_max_curvature)
+Real findCorrespondingHighPressureForCurvature(PeristalticBendingRobot<N>* robot, Real low_pressure, Real desired_curvature)
 {
     std::vector<Vec2r> actuation_pressures(1, Vec2r::Zero());
 
     Real last_eff_curvature = 0;
-    for (Real high_pressure = low_pressure; high_pressure < low_pressure+200e3; high_pressure+=0.5e3)
+    for (Real high_pressure = low_pressure; high_pressure < low_pressure+200e3; high_pressure+=0.01e3)
     {
-        if (desired_max_curvature < 0)
+        if (desired_curvature < 0)
         {
             actuation_pressures[0][0] = low_pressure;
             actuation_pressures[0][1] = high_pressure;
@@ -58,16 +58,15 @@ Real findCorrespondingHighPressureForCurvature(PeristalticBendingRobot<N>* robot
             }
         }
 
-        Real eff_curvature;
-        if (desired_max_curvature < 0)
-        {
-            eff_curvature = robot->state().u2().minCoeff() / robot->state().v3().maxCoeff();
-        }
-        else
-        {
-            eff_curvature = robot->state().u2().maxCoeff() / robot->state().v3().maxCoeff();
-        }
-        if (std::abs(eff_curvature) >= std::abs(desired_max_curvature))
+        Real h = robot->length() / (N-1);
+        Real desired_swept_angle = desired_curvature * h * robot->state().v3().sum();
+        
+        Vec6r posAndOri = robot->nodePositionAndOrientation(N-1);
+        Vec3r ori = posAndOri.tail<3>();
+        Real actual_swept_angle = 2*ori[1];
+
+        // std::cout << "desired swept angle: " << desired_swept_angle << "; actual swept angle: " << actual_swept_angle << std::endl;
+        if (std::abs(actual_swept_angle) >= std::abs(desired_swept_angle))
         {
             return high_pressure;
         }

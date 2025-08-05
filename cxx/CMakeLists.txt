@@ -70,3 +70,6 @@ target_link_libraries(TestPeristalticBendingRobotGroundMotion Eigen3::Eigen Algl
 
 add_executable(TestPeristalticBendingRobotPathFollowing tests/test_peristaltic_bending_robot_path_following.cpp)
 target_link_libraries(TestPeristalticBendingRobotPathFollowing Eigen3::Eigen AlglibOptimization)
+
+add_executable(TestPathOptimizer tests/test_path_optimizer.cpp)
+target_link_libraries(TestPathOptimizer Eigen3::Eigen AlglibOptimization)

@@ -88,9 +88,12 @@ def main():
     # Set up plotter
     ###########################################
     pl = pv.Plotter()
-    pl.camera.position = [0, 0.1, 10]
-    pl.camera.focal_point = [0, 0, 0]
-    pl.camera.clipping_range = (0.01, 1000.01)
+    pl.camera.enable_parallel_projection()
+    pl.camera_position = 'xy'
+    pl.camera.zoom(0.3)
+    # pl.camera.position = [0, 0, 1]
+    # pl.camera.focal_point = [0, 0, 0]
+    # pl.camera.clipping_range = (0.01, 1000.01)
 
     plane = pv.Plane()
     pl.add_mesh(plane)
@@ -112,6 +115,14 @@ def main():
         pl.add_mesh(cross_section_meshes[i], color=MODEL_COLOR, opacity=1.0, show_edges=True, edge_color='k')
     
     pl.add_floor()
+
+    axes = pl.add_axes_at_origin()
+
+    radius = 2
+    circle = pv.Circle(radius)
+    for pt in circle.points:
+        pt[0] = pt[0] + radius
+    pl.add_mesh(circle)
     # start plotting
     pl.show(auto_close=False, interactive_update=True)
 
@@ -136,7 +147,7 @@ def main():
             cross_section_meshes[i].shallow_copy(new_pv_cs_mesh)
 
         pl.render()
-        time.sleep(1/10)
+        time.sleep(1/20)
 
     time.sleep(10)
     pl.close()

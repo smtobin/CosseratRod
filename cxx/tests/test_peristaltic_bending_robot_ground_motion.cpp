@@ -3,7 +3,7 @@
 #include "../alglib-cpp/src/optimization.h"
 #include "PeristalticBendingRobotGroundSimulator.hpp"
 
-#define N 49
+#define N 13
 
 int main()
 {
@@ -59,7 +59,7 @@ int main()
     int gap = 6;
     for (int a = 0; a < num_actuators; a++)
     {
-        actuator_pressures[a].resize(num_cycles * num_steps_per_cycle, Vec2r(0e3, 9e3));
+        actuator_pressures[a].resize(num_cycles * num_steps_per_cycle, Vec2r(8640, 0));
     }
 
     for (int a = 0; a < num_actuators; a++)
@@ -67,11 +67,11 @@ int main()
         int ind = (a%gap);
         while (ind+4 < num_cycles*num_steps_per_cycle)
         {
-            actuator_pressures[a][ind++] = Vec2r(0e3, 9e3);
-            actuator_pressures[a][ind++] = Vec2r(50e3, 59.5e3);
-            actuator_pressures[a][ind++] = Vec2r(100e3, 110e3);
-            actuator_pressures[a][ind++] = Vec2r(50e3, 59.5e3);
-            actuator_pressures[a][ind++] = Vec2r(0e3, 9e3);
+            actuator_pressures[a][ind++] = Vec2r(8640, 0);
+            actuator_pressures[a][ind++] = Vec2r(59020, 50e3);
+            actuator_pressures[a][ind++] = Vec2r(109470, 100e3);
+            actuator_pressures[a][ind++] = Vec2r(59020, 50e3);
+            actuator_pressures[a][ind++] = Vec2r(8640, 0);
             // actuator_pressures[a][ind++] = Vec2r(0e3, 0e3);
             // actuator_pressures[a][ind++] = Vec2r(60e3, 60e3);
             // actuator_pressures[a][ind++] = Vec2r(150e3, 150e3);

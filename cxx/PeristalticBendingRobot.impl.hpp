@@ -144,6 +144,47 @@ typename PeristalticBendingRobot<N>::PositionGradientType PeristalticBendingRobo
 }
 
 template<int N>
+Vec6r PeristalticBendingRobot<N>::nodePositionAndOrientation(int node_index) const
+{
+    typename State::StrainVarVecType v1 = _state.v1();
+    typename State::StrainVarVecType v2 = _state.v2();
+    typename State::StrainVarVecType v3 = _state.v3();
+    typename State::StrainVarVecType u1 = _state.u1();
+    typename State::StrainVarVecType u2 = _state.u2();
+    typename State::StrainVarVecType u3 = _state.u3();
+
+    Mat4r T = Mat4r::Identity();
+    T.block<3,1>(0,3) = _state.p();
+    T.block<3,3>(0,0) = Math::Exp_so3(_state.ori());
+
+    // integrate forwards from the center
+    if (node_index > _center_node)
+    {
+        for (int i = _center_node; i < node_index; i++)
+        {
+            Real h = _node_locations[i+1] - _node_locations[i];
+            T = T * Math::Exp_se3( h*Vec6r(u1[i], u2[i], u3[i], v1[i], v2[i], v3[i]));
+        }
+    }
+    // integrate backwards from the center
+    else
+    {
+        for (int i = _center_node; i > node_index; i--)
+        {
+            Real h = _node_locations[i-1] - _node_locations[i]; // h is negative since we are going backwards
+            T = T * Math::Exp_se3( h*Vec6r(u1[i-1], u2[i-1], u3[i-1], v1[i-1], v2[i-1], v3[i-1]));
+        }
+    }
+
+    Vec3r pos = T.block<3,1>(0,3);
+    Vec3r ori = Math::Log_SO3(T.block<3,3>(0,0));
+    Vec6r result(pos[0], pos[1], pos[2], ori[0], ori[1], ori[2]);
+
+    // std::cout << "Actuator " << actuator_index << " position: " << pos.transpose() << std::endl;
+    return result;
+}
+
+template<int N>
 Vec6r PeristalticBendingRobot<N>::actuatorPositionAndOrientation(int actuator_index) const
 {
     const typename State::StrainVarVecType v1 = _state.v1();

@@ -2,17 +2,17 @@
 #define __PERISTALTIC_BENDING_ROBOT_PATH_FOLLOWING_SIMULATION_IMPL_HPP
 
 #include "../alglib-cpp/src/optimization.h"
+#include "../LBFGSpp/include/LBFGS.h"  
+#include "CosseratRod.hpp"
 
-Real PeristalticBendingRobotPathFollowingSimulator<N>::_findCorrespondingHighPressureForCurvature(
-    Real low_pressure, Real desired_curvature)
+template<int N, int M>
+Vec2r PeristalticBendingRobotPathFollowingSimulator<N,M>::_findPressuresForCurvature(Real low_pressure, Real desired_curvature)
 {
-    PeristalticBendingRobot<num_segments_per_actuator+1> robot(actuator_length, rod_cs, E, nu, 1, actuator_length, actuator_cs);
     std::vector<Vec2r> actuation_pressures(1, Vec2r::Zero());
 
-    Real last_eff_curvature = 0;
     for (Real high_pressure = low_pressure; high_pressure < low_pressure+200e3; high_pressure+=0.5e3)
     {
-        if (desired_max_curvature < 0)
+        if (desired_curvature < 0)
         {
             actuation_pressures[0][0] = low_pressure;
             actuation_pressures[0][1] = high_pressure;
@@ -23,9 +23,7 @@ Real PeristalticBendingRobotPathFollowingSimulator<N>::_findCorrespondingHighPre
             actuation_pressures[0][1] = low_pressure;
         }
             
-
-        int n_iter = 1;
-        PeristalticBendingRobot_OptimizationFunctor functor(robot, actuation_pressures);
+        PeristalticBendingRobot_OptimizationFunctor functor(_single_actuator_robot.get(), actuation_pressures);
 
         // Set up parameters
         LBFGSpp::LBFGSParam<Real> param;
@@ -35,50 +33,176 @@ Real PeristalticBendingRobotPathFollowingSimulator<N>::_findCorrespondingHighPre
         // Create solver object
         LBFGSpp::LBFGSSolver<Real> solver(param);
 
-        VecXr orig_x = robot->state().state_vec;
+        VecXr x = _single_actuator_robot->state().state_vec;
+        Real fx;
 
-        auto t_start = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i < n_iter; i++)
+        try 
         {
-            // initial guess is rod's original state
-            VecXr x = orig_x;
-            Real fx;
-
-            try 
-            {
-                // solve the optimization problem
-                int niter = solver.minimize(functor, x, fx);
-            }
-            catch(const std::runtime_error& e)
-            {
-                // if we don't converge, print out the error (maybe epsilon was set too small)
-                // std::cout << "Error occurred: " << e.what() << std::endl;
-            }
+            // solve the optimization problem
+            int niter = solver.minimize(functor, x, fx);
         }
+        catch(const std::runtime_error& e)
+        {
+            // if we don't converge, print out the error (maybe epsilon was set too small)
+            // std::cout << "Error occurred: " << e.what() << std::endl;
+        }
+        
 
         Real eff_curvature;
-        if (desired_max_curvature < 0)
+        if (desired_curvature < 0)
         {
-            eff_curvature = robot->state().u2().minCoeff() / robot->state().v3().maxCoeff();
+            eff_curvature = _single_actuator_robot->state().u2().minCoeff() / _single_actuator_robot->state().v3().maxCoeff();
         }
         else
         {
-            eff_curvature = robot->state().u2().maxCoeff() / robot->state().v3().maxCoeff();
+            eff_curvature = _single_actuator_robot->state().u2().maxCoeff() / _single_actuator_robot->state().v3().maxCoeff();
         }
-        if (std::abs(eff_curvature) >= std::abs(desired_max_curvature))
+        if (std::abs(eff_curvature) >= std::abs(desired_curvature))
         {
-            return high_pressure;
+            return actuation_pressures[0];
         }
             
     }
 
-    return low_pressure;
+    return Vec2r(low_pressure, low_pressure);
 }
 
-template<int N>
-std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotPathFollowingSimulator<N>::runSimulation(int num_steps)
+template<int N, int M>
+Vec2r PeristalticBendingRobotPathFollowingSimulator<N,M>::_findPressuresForPath(Real low_pressure, int actuator_index, int node, bool from_center)
+{
+    std::vector<Vec2r> actuation_pressures(1, Vec2r::Zero());
+    
+
+    Real min_dist = std::numeric_limits<Real>::max();
+    Vec2r min_pressures(low_pressure, low_pressure);
+    for (Real high_pressure = low_pressure; high_pressure < low_pressure+100e3; high_pressure+=0.5e3)
+    {
+        // just assume we have positive curvature for now
+        actuation_pressures[0][0] = high_pressure;
+        actuation_pressures[0][1] = low_pressure;
+            
+        PeristalticBendingRobot_OptimizationFunctor functor(_single_actuator_robot.get(), actuation_pressures);
+
+        // Set up parameters
+        LBFGSpp::LBFGSParam<Real> param;
+        param.epsilon = 0;
+        param.max_iterations = 10000;
+
+        // Create solver object
+        LBFGSpp::LBFGSSolver<Real> solver(param);
+
+        VecXr x = _single_actuator_robot->state().state_vec;
+        Real fx;
+        try 
+        {
+            // solve the optimization problem
+            int niter = solver.minimize(functor, x, fx);
+        }
+        catch(const std::runtime_error& e)
+        {
+        }
+    
+        Vec3r pos;
+
+        if (from_center)
+        {
+            Vec6r actuator_pos = _robot->actuatorPositionAndOrientation(actuator_index);
+            std::vector<Vec3r> node_positions = _single_actuator_robot->nodePositions(
+                actuator_pos.head<3>(), actuator_pos.tail<3>(),
+                _single_actuator_robot->state().v1(), _single_actuator_robot->state().v2(), _single_actuator_robot->state().v3(),
+                _single_actuator_robot->state().u1(), _single_actuator_robot->state().u2(), _single_actuator_robot->state().u3()
+            );
+            pos = node_positions[node];
+        }
+        else
+        {
+            Vec6r actuator_base = _robot->actuatorBasePositionAndOrientation(actuator_index);
+            pos = CosseratRod<M>::nodePosition(
+                _robot->length() / (N-1), node,
+                actuator_base.head<3>(), Math::Exp_so3(actuator_base.tail<3>()),
+                _single_actuator_robot->state().v1(), _single_actuator_robot->state().v2(), _single_actuator_robot->state().v3(),
+                _single_actuator_robot->state().u1(), _single_actuator_robot->state().u2(), _single_actuator_robot->state().u3()
+            );
+        }
+
+        Real dist = _distanceFromPath(pos);
+        if (dist < min_dist)
+        {
+            min_dist = dist;
+            min_pressures = actuation_pressures[0];
+        }
+            
+    }
+    // I'm lazy
+    for (Real high_pressure = low_pressure; high_pressure < low_pressure+100e3; high_pressure+=0.5e3)
+    {
+        // just assume we have positive curvature for now
+        actuation_pressures[0][1] = high_pressure;
+        actuation_pressures[0][0] = low_pressure;
+            
+        PeristalticBendingRobot_OptimizationFunctor functor(_single_actuator_robot.get(), actuation_pressures);
+
+        // Set up parameters
+        LBFGSpp::LBFGSParam<Real> param;
+        param.epsilon = 0;
+        param.max_iterations = 10000;
+
+        // Create solver object
+        LBFGSpp::LBFGSSolver<Real> solver(param);
+
+        VecXr x = _single_actuator_robot->state().state_vec;
+        Real fx;
+        try 
+        {
+            // solve the optimization problem
+            int niter = solver.minimize(functor, x, fx);
+        }
+        catch(const std::runtime_error& e)
+        {
+        }
+    
+        Vec3r pos;
+
+        if (from_center)
+        {
+            Vec6r actuator_pos = _robot->actuatorPositionAndOrientation(actuator_index);
+            std::vector<Vec3r> node_positions = _single_actuator_robot->nodePositions(
+                actuator_pos.head<3>(), actuator_pos.tail<3>(),
+                _single_actuator_robot->state().v1(), _single_actuator_robot->state().v2(), _single_actuator_robot->state().v3(),
+                _single_actuator_robot->state().u1(), _single_actuator_robot->state().u2(), _single_actuator_robot->state().u3()
+            );
+            pos = node_positions[node];
+        }
+        else
+        {
+            Vec6r actuator_base = _robot->actuatorBasePositionAndOrientation(actuator_index);
+            pos = CosseratRod<M>::nodePosition(
+                _robot->length() / (N-1), node,
+                actuator_base.head<3>(), Math::Exp_so3(actuator_base.tail<3>()),
+                _single_actuator_robot->state().v1(), _single_actuator_robot->state().v2(), _single_actuator_robot->state().v3(),
+                _single_actuator_robot->state().u1(), _single_actuator_robot->state().u2(), _single_actuator_robot->state().u3()
+            );
+        }
+
+        Real dist = _distanceFromPath(pos);
+        if (dist < min_dist)
+        {
+            min_dist = dist;
+            min_pressures = actuation_pressures[0];
+        }
+            
+    }
+
+    std::cout << "Actuator " << actuator_index << " min achieved distance: " << min_dist << std::endl;
+
+    return min_pressures;
+}
+
+template<int N, int M>
+std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotPathFollowingSimulator<N,M>::runSimulation()
 {
     // create output vector
+    int num_steps = _actuator_pressures[0].size();
     _states.resize(num_steps);
 
     int num_actuators = _robot->numActuators();
@@ -91,7 +215,7 @@ std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotP
     alglib::real_1d_array s;
     s.setcontent(num_states, ones.data());
     // optimizer parameters
-    double epsx = 0.000001;
+    double epsx = 0.0000001;
     alglib::ae_int_t maxits = 0;
     alglib::minnlcstate state;
 
@@ -109,6 +233,7 @@ std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotP
     // keeps track of current actuator positions and pressures
     std::vector<Vec6r> current_actuator_positions(_robot->numActuators());
     std::vector<Real> current_actuator_low_pressures(_robot->numActuators());
+    std::vector<Vec2r> current_actuator_pressures(_robot->numActuators());
 
     for (int step = 0; step < num_steps; step++)
     try
@@ -126,7 +251,7 @@ std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotP
         for (int a = 0; a < _robot->numActuators(); a++)
         {
             current_actuator_low_pressures[a] = _actuator_pressures[a][step];
-            std::cout << "Actuator low pressure " << a << ": " << current_actuator_low_pressures[a].transpose() << std::endl;
+            std::cout << "Actuator low pressure " << a << ": " << current_actuator_low_pressures[a] << std::endl;
         }
 
 
@@ -147,7 +272,7 @@ std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotP
         // fix an actuator if it has the max pressure
         for (int a = 0; a < _robot->numActuators(); a++)
         {
-            if (_actuator_pressures[a][step] == max_pressure && max_pressure > 100e3)
+            if (_actuator_pressures[a][step] == max_pressure && max_pressure >= 100e3)
             {
                 nl[6*a] = 0; nl[6*a+1] = 0; nl[6*a+2] = 0; nl[6*a+3] = 0; nl[6*a+4] = 0; nl[6*a+5] = 0;
                 nu[6*a] = 0; nu[6*a+1] = 0; nu[6*a+2] = 0; nu[6*a+3] = 0; nu[6*a+4] = 0; nu[6*a+5] = 0;
@@ -166,14 +291,37 @@ std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotP
         {
             // if the actuator has maximum pressure, then calculate the high pressure based on desired curvature
             // we take the desired curvature to be the curvature of the path at the actuator's current position (since it will be fixed)
-            if (_actuator_pressures[a][step] == max_pressure && max_pressure > 100e3)
+            if (_actuator_pressures[a][step] == max_pressure && max_pressure >= 100e3)
             {
-                _findHighPressureFromCurvature(_actuator_pressures[a][step])
+                Vec2r curvature_pressures = _findPressuresForCurvature(current_actuator_low_pressures[a], _pathCurvature(current_actuator_positions[a].head<3>()));
+                if (a == 0)
+                {
+                    // find pressures such that the tip is on the path
+                    Vec2r path_pressures = _findPressuresForPath(current_actuator_low_pressures[a], a, M-1, true);
+                    current_actuator_pressures[a] = curvature_pressures*0.9 + path_pressures*0.1;
+                }
+                else
+                {
+                    Vec2r path_pressures = _findPressuresForPath(current_actuator_low_pressures[a], a, 0, true);
+                    current_actuator_pressures[a] = curvature_pressures*0.9 + path_pressures*0.1;
+                }
+                
+                
+                // int actuator_node = _robot->actuatorNode(a);
+                // Real last_curvature = _robot->state().u2()[actuator_node];
+                // current_actuator_pressures[a] = _findPressuresForCurvature(current_actuator_low_pressures[a], last_curvature);
+                current_actuator_pressures[a] = curvature_pressures;
             }
+            // if the actuator does not have maximum pressure, then calculate the high pressure in order to stay on the path
             else
             {
-
+                Vec2r curvature_pressures = _findPressuresForCurvature(current_actuator_low_pressures[a], _pathCurvature(current_actuator_positions[a].head<3>()));
+                Vec2r path_pressures = _findPressuresForPath(current_actuator_low_pressures[a], a);
+                // current_actuator_pressures[a] = curvature_pressures*0.7 + path_pressures*0.3;
+                current_actuator_pressures[a] = curvature_pressures;
             }
+
+            std::cout << "Actuator " << a << " pressures: " << current_actuator_pressures[a].transpose() << std::endl;
         }
 
         // alglib::minnlcsetbc(state, bndl, bndu);

@@ -117,6 +117,7 @@ public:
     Real E() const { return _E; }
     Real nu() const { return _nu; }
     const CrossSection* crossSection() const { return &_rod_cross_section; }
+    const CrossSection* actuatorCrossSection() const { return &_actuator_cross_section; }
 
     int numActuators() const { return _num_actuators; }
 
@@ -172,6 +173,8 @@ public:
         const typename State::StrainVarVecType& u1,
         const typename State::StrainVarVecType& u2,
         const typename State::StrainVarVecType& u3) const;
+
+    Vec6r nodePositionAndOrientation(int node_index) const;
 
     std::vector<PositionGradientType> nodePositionGradients() const;
 

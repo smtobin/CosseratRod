@@ -83,6 +83,16 @@ public:
         const typename State::StrainVarVecType& u2,
         const typename State::StrainVarVecType& u3);
 
+    static Vec6r nodePositionAndOrientationGivenStartingNode(Real h,
+        int starting_node_index, const Vec3r& start_position, const Mat3r& start_orientation,
+        int end_node_index,
+        const typename State::StrainVarVecType& v1,
+        const typename State::StrainVarVecType& v2,
+        const typename State::StrainVarVecType& v3,
+        const typename State::StrainVarVecType& u1,
+        const typename State::StrainVarVecType& u2,
+        const typename State::StrainVarVecType& u3);
+
     /** Computes the tip position of the rod in its current state. */
     Vec3r tipPosition() const;
 

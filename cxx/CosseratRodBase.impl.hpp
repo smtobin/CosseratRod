@@ -43,6 +43,41 @@ Vec3r CosseratRod_Base<N, State>::nodePosition(Real h, int node_index,
     return T.block<3,1>(0,3);
 }
 
+template <int N, typename State>
+Vec6r CosseratRod_Base<N, State>::nodePositionAndOrientationGivenStartingNode(Real h,
+        int starting_node_index, const Vec3r& start_position, const Mat3r& start_orientation,
+        int end_node_index,
+        const typename State::StrainVarVecType& v1,
+        const typename State::StrainVarVecType& v2,
+        const typename State::StrainVarVecType& v3,
+        const typename State::StrainVarVecType& u1,
+        const typename State::StrainVarVecType& u2,
+        const typename State::StrainVarVecType& u3)
+{
+    Mat4r T = Mat4r::Identity();
+    T.block<3,3>(0,0) = start_orientation;
+    T.block<3,1>(0,3) = start_position;
+    if (starting_node_index < end_node_index)
+    {
+        for(int i = starting_node_index; i < end_node_index; i++)
+        {
+            T = T * Math::Exp_se3( h*Vec6r(u1[i], u2[i], u3[i], v1[i], v2[i], v3[i]));
+        }
+    }
+    else
+    {
+        for (int i = starting_node_index; i > end_node_index; i++)
+        {
+            T = T * Math::Exp_se3( -h*Vec6r(u1[i-1], u2[i-1], u3[i-1], v1[i-1], v2[i-1], v3[i-1]));
+        }
+    }
+
+    Vec3r pos = T.block<3,1>(0,3);
+    Vec3r ori = Math::Log_SO3(T.block<3,3>(0,0));
+    Vec6r result(pos[0], pos[1], pos[2], ori[0], ori[1], ori[2]);
+    return result;
+}
+
 template<int N, typename State>
 Vec3r CosseratRod_Base<N, State>::tipPosition() const
 {
