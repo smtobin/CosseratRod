@@ -147,7 +147,7 @@ def main():
             cross_section_meshes[i].shallow_copy(new_pv_cs_mesh)
 
         pl.render()
-        time.sleep(1/20)
+        time.sleep(1/10)
 
     time.sleep(10)
     pl.close()

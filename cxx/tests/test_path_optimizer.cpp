@@ -1,17 +1,24 @@
 #include "PeristalticBendingRobotPathOptimizer.hpp"
 #include "RodUtils.hpp"
 
+#include <iomanip>
+
 #define N 13
 
 void runSimulation(PeristalticBendingRobot<N>* robot, const std::vector<std::vector<Real>>& avg_pressures)
 {
-    PeristalticBendingRobot<N> robot_copy(robot);
+    // write robot to file
+    const std::string output_folder = "../output/sim/";
+    std::string robot_filename = output_folder + "robot.txt";
+    robot->writeToFile(robot_filename);
+
+    PeristalticBendingRobot<N> robot_copy(*robot);
     for (unsigned step = 0; step < avg_pressures.size(); step++)
     {
         const std::vector<Real>& cur_avg_pressures = avg_pressures[step];
         // fix the back actuator (actuator 0)
         int fixed_actuator_index = (cur_avg_pressures[0] > cur_avg_pressures[1]) ? 0 : 1;
-        Vec6r fixed_actuator_pos_and_ori = robot.actuatorPositionAndOrientation(fixed_actuator_index);
+        Vec6r fixed_actuator_pos_and_ori = robot->actuatorPositionAndOrientation(fixed_actuator_index);
         Vec3r fixed_actuator_position = fixed_actuator_pos_and_ori.head<3>();
         Mat3r fixed_actuator_orientation = Math::Exp_so3(fixed_actuator_pos_and_ori.tail<3>());
 
@@ -22,33 +29,36 @@ void runSimulation(PeristalticBendingRobot<N>* robot, const std::vector<std::vec
         PeristalticBendingRobotPathOptimizer<N> optimizer(robot);
         std::vector<Vec2r> optimal_pressures = optimizer.findOptimalPressures(cur_avg_pressures, fixed_actuator_index, fixed_actuator_position, fixed_actuator_orientation);
 
-        std::cout << "Actuator 0 optimal pressures: " << optimal_pressures[0].transpose() << std::endl;
-        std::cout << "Actuator 1 optimal pressures: " << optimal_pressures[1].transpose() << std::endl;
+        // std::cout << "Actuator 0 optimal pressures: " << optimal_pressures[0].transpose() << std::endl;
+        // std::cout << "Actuator 1 optimal pressures: " << optimal_pressures[1].transpose() << std::endl;
 
-        // apply the optimal pressures
-        PeristalticBendingRobot_OptimizationFunctor functor(&robot_copy, optimal_pressures);
-        // Set up parameters
-        LBFGSpp::LBFGSParam<Real> param;
-        param.epsilon = 0;
-        param.max_iterations = 10000;
+        // apply the optimal pressures to the robot copy to get curvature and cross-section deformation
+        {
+            PeristalticBendingRobot_OptimizationFunctor functor(&robot_copy, optimal_pressures);
+            // Set up parameters
+            LBFGSpp::LBFGSParam<Real> param;
+            param.epsilon = 0;
+            param.max_iterations = 10000;
 
-        // Create solver object
-        LBFGSpp::LBFGSSolver<Real> solver(param);
-        Real fx;
-        VecXr x = robot->state().state_vec;
-        try 
-        {
-            // solve the optimization problem
-            solver.minimize(functor, x, fx);
-        }
-        catch(const std::runtime_error& e)
-        {
-            // if we don't converge, print out the error (maybe epsilon was set too small)
-            // std::cout << "Error occurred: " << e.what() << std::endl;
+            // Create solver object
+            LBFGSpp::LBFGSSolver<Real> solver(param);
+            Real fx;
+            VecXr x = robot->state().state_vec;
+            try 
+            {
+                // solve the optimization problem
+                solver.minimize(functor, x, fx);
+            }
+            catch(const std::runtime_error& e)
+            {
+                // if we don't converge, print out the error (maybe epsilon was set too small)
+                // std::cout << "Error occurred: " << e.what() << std::endl;
+            }
         }
 
         // calculate the new center position and orientation
         Vec6r pos_and_ori = CosseratRod<N>::nodePositionAndOrientationGivenStartingNode(
+            robot->length() / (N-1),
             robot->actuatorNode(fixed_actuator_index),
             fixed_actuator_position,
             fixed_actuator_orientation,
@@ -58,10 +68,25 @@ void runSimulation(PeristalticBendingRobot<N>* robot, const std::vector<std::vec
         );
 
         // set the robot state
-        PeristalticBendingRobot<N>::State copy_state = robot_copy->state();
+        PeristalticBendingRobot<N>::State copy_state = robot_copy.state();
         copy_state.set_p(pos_and_ori.head<3>());
         copy_state.set_ori(pos_and_ori.tail<3>());
         robot->setState(copy_state);
+
+        // write current robot state to file
+        std::stringstream ss;
+        ss << std::setw(4) << std::setfill('0') << step;
+        std::string filename = output_folder + "step" + ss.str() + ".txt";
+        std::ofstream file(filename);
+        if (file.is_open())
+        {
+            for (int a = 0; a < robot->numActuators(); a++)
+            {
+                file << optimal_pressures[a].transpose() << " ";
+            }
+            file << "\n" << copy_state.state_vec;
+        }
+        file.close();
     }
 }
 
@@ -87,7 +112,15 @@ int main()
     initial_state.set_ori(Vec3r(-M_PI/2,0,0));
     robot.setState(initial_state);
 
-    
+    std::vector<std::vector<Real>> avg_pressures;
+    int num_cycles = 100;
+    for (int i = 0; i < num_cycles; i++)
+    {
+        std::vector<Real> avg_pressures1 = {150e3, 50e3};
+        std::vector<Real> avg_pressures2 = {50e3, 100e3};
+        avg_pressures.push_back(avg_pressures1);
+        avg_pressures.push_back(avg_pressures2);
+    }
 
-    RodUtils::writeToFile("../output/peristaltic_bending.txt", robot);
+    runSimulation(&robot, avg_pressures);
 }

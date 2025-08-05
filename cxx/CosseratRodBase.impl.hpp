@@ -66,7 +66,7 @@ Vec6r CosseratRod_Base<N, State>::nodePositionAndOrientationGivenStartingNode(Re
     }
     else
     {
-        for (int i = starting_node_index; i > end_node_index; i++)
+        for (int i = starting_node_index; i > end_node_index; i--)
         {
             T = T * Math::Exp_se3( -h*Vec6r(u1[i-1], u2[i-1], u3[i-1], v1[i-1], v2[i-1], v3[i-1]));
         }

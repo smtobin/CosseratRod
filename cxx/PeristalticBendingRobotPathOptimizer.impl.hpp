@@ -35,7 +35,7 @@ std::vector<Vec2r> PeristalticBendingRobotPathOptimizer<N>::findOptimalPressures
         std::cout << "Error in findOptimalPressures: " << e.what() << std::endl;
     }
 
-    std::cout << "Optimal pressure differentials: " << x.transpose() << std::endl;
+    // std::cout << "Optimal pressure differentials: " << x.transpose() << std::endl;
 
     // output the optimal actuation pressures, not just the differentials
     // can easily get these from the average pressures that were passed in
@@ -115,7 +115,7 @@ VecXr PeristalticBendingRobotPathOptimizer<N>::minimizationGradient(
         new_actuation_pressures[i][1] -= pressure_delta/2;
         Real new_cost = minimizationCost(new_actuation_pressures, fixed_actuator_index, fixed_actuator_position, fixed_actuator_rotation);
         
-        std::cout << "cost diff: " << new_cost - orig_cost << std::endl;
+        // std::cout << "cost diff: " << new_cost - orig_cost << std::endl;
         grad[i] = (new_cost - orig_cost) / pressure_delta;
         new_actuation_pressures[i][0] -= pressure_delta/2;
         new_actuation_pressures[i][1] += pressure_delta/2;
