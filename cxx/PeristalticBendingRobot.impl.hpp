@@ -587,7 +587,7 @@ Real PeristalticBendingRobot<N>::minimizationEnergy(const std::vector<Vec2r>& ac
         const Real c_prime = (c[i+1] - c[i]) / h;
 
         // check if we need to increment the actuator index
-        if (i >= _actuator_intervals[current_actuator_index].second)
+        if (i >= _actuator_intervals[current_actuator_index].second && current_actuator_index < _actuator_intervals.size()-1)
             current_actuator_index++;
 
         // check and see if we are at a segment that is spanned by a pneumatic actuator
@@ -721,7 +721,7 @@ typename PeristalticBendingRobot<N>::EnergyGradientType PeristalticBendingRobot<
         Real dcp_dci = -1.0/h;  Real dcp_dciplus1 = 1.0/h;
 
         // check if we need to increment the actuator index
-        if (i >= _actuator_intervals[current_actuator_index].second)
+        if (i >= _actuator_intervals[current_actuator_index].second && current_actuator_index < _actuator_intervals.size()-1)
             current_actuator_index++;
 
         // check and see if we are at a segment that is spanned by a pneumatic actuator

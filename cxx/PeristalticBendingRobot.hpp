@@ -268,7 +268,8 @@ public:
 
 private:
     PeristalticBendingRobot<NumNodes_>* _robot;
-    const std::vector<Vec2r>& _actuation_pressures;
+    // const std::vector<Vec2r>& _actuation_pressures;
+    std::vector<Vec2r> _actuation_pressures;
 };
 
 #include "../alglib-cpp/src/ap.h"

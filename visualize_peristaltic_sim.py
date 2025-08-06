@@ -12,7 +12,7 @@ import numpy as np
 
 ROD_FILENAME = "cxx/output/peristaltic.txt"
 SIM_FOLDER_PATH = "cxx/output/sim"
-# SIM_FOLDER_PATH = "cxx/output/N=49_bent_sim5"
+# SIM_FOLDER_PATH = "cxx/output/N=13_circle_sim_2actuator"
 
 MODEL_COLOR = [255, 130, 0]
 
@@ -88,11 +88,12 @@ def main():
     # Set up plotter
     ###########################################
     pl = pv.Plotter()
-    pl.camera.enable_parallel_projection()
-    pl.camera_position = 'xy'
-    pl.camera.zoom(0.3)
+    # pl.camera.enable_parallel_projection()
+    # pl.camera_position = 'xy'
+    pl.camera_position = [5,0,25]
+    # pl.camera.zoom(0.3)
     # pl.camera.position = [0, 0, 1]
-    # pl.camera.focal_point = [0, 0, 0]
+    pl.camera.focal_point = [4.99, 0, 0]
     # pl.camera.clipping_range = (0.01, 1000.01)
 
     plane = pv.Plane()
@@ -114,15 +115,41 @@ def main():
         cross_section_meshes.append(pv_cs_mesh)
         pl.add_mesh(cross_section_meshes[i], color=MODEL_COLOR, opacity=1.0, show_edges=True, edge_color='k')
     
-    pl.add_floor()
+    # pl.add_floor()
 
     axes = pl.add_axes_at_origin()
 
-    radius = 2
-    circle = pv.Circle(radius)
-    for pt in circle.points:
-        pt[0] = pt[0] + radius
-    pl.add_mesh(circle)
+    r1 = 4  
+    c1 = np.array([0,r1])
+    circle1 = pv.Circle(r1)
+    for pt in circle1.points:
+        pt[0] = pt[0] + c1[0]
+        pt[1] = pt[1] + c1[1]
+    pl.add_mesh(circle1)
+
+    # Real cos45 = 0.5*std::sqrt(2.0);
+    #     Real sin45 = 0.5*std::sqrt(2.0);
+    #     Real r1 = 4.0; Real r2 = 0.5; Real r3 = 1.0;
+    #     Vec2r c1(0, r1);
+    #     Vec2r c2 = c1 + r1*Vec2r(cos45, -sin45) + r2*Vec2r(-cos45, sin45);
+    #     Vec2r c3 = c2 + r2*Vec2r(-cos45, sin45) + r3*Vec2r(-cos45, sin45);
+    r2 = 3.0
+    c2 = c1 + r1*np.array([np.sqrt(2)/2, -np.sqrt(2)/2]) + r2*np.array([np.sqrt(2)/2, -np.sqrt(2)/2])
+    circle2 = pv.Circle(r2)
+    for pt in circle2.points:
+        pt[0] = pt[0] + c2[0]
+        pt[1] = pt[1] + c2[1]
+    pl.add_mesh(circle2, color=[0,0,0], style='wireframe')
+
+    r3 = 2.5
+    c3 = c2 + (r2+r3)*np.array([1, 0])
+    circle3 = pv.Circle(r3)
+    for pt in circle3.points:
+        pt[0] = pt[0] + c3[0]
+        pt[1] = pt[1] + c3[1]
+    pl.add_mesh(circle3, color=[0,255,0])
+    
+
     # start plotting
     pl.show(auto_close=False, interactive_update=True)
 
@@ -147,7 +174,7 @@ def main():
             cross_section_meshes[i].shallow_copy(new_pv_cs_mesh)
 
         pl.render()
-        time.sleep(1/10)
+        time.sleep(1/30)
 
     time.sleep(10)
     pl.close()

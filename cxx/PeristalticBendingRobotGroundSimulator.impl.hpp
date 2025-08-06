@@ -62,34 +62,6 @@ std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotG
             std::cout << "Actuator pressures " << a << ": " << current_actuator_pressures[a].transpose() << std::endl;
         }
 
-        // if (step == 0)
-        // {
-        //     // run optimization without constraints to set the shape of the robot
-        //     PeristalticBendingRobot_OptimizationFunctor functor(_robot, current_actuator_pressures);
-
-        //     // Set up parameters
-        //     LBFGSpp::LBFGSParam<Real> param;
-        //     param.epsilon = 0;
-        //     param.max_iterations = 10000;
-
-        //     // Create solver object
-        //     LBFGSpp::LBFGSSolver<Real> solver(param);
-
-        //     VecXr orig_x = _robot->state().state_vec;
-        //     Real fx;
-
-        //     try 
-        //     {
-        //         // solve the optimization problem
-        //         int niter = solver.minimize(functor, orig_x, fx);
-        //     }
-        //     catch(const std::runtime_error& e)
-        //     {
-        //         // if we don't converge, print out the error (maybe epsilon was set too small)
-        //         std::cout << "Error occurred: " << e.what() << std::endl;
-        //     }
-        // }
-
 
         // calculate current actuator positions
         for (int a = 0; a < _robot->numActuators(); a++)
