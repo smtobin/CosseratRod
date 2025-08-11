@@ -22,19 +22,26 @@ ROD_WIDTH_X = 1
 ROD_WIDTH_Y = 0.5
 SPACING = ROD_WIDTH_X * 2
 
-NU = 0.3
+NU = 0.49
 
-NASTRAN_UNDEFORMED_STL_FILENAME = f"nastran/1x0.5_block_E=1e5_nu={NU}/bending/undeformed.stl"
+NASTRAN_UNDEFORMED_STL_FILENAME = "nastran/0.5x2_cyl_E=1e5_nu=0.49/stretching/undeformed.stl"
 NASTRAN_DEFORMED_STL_FILENAME = f"nastran/1x0.5_block_E=1e5_nu={NU}/bending/deformed.stl"
-NASTRAN_UNDEFORMED_CSV_FILENAME = f"nastran/1x0.5_block_E=1e5_nu={NU}/bending/orig_nodes.csv"
+NASTRAN_DEFORMED_FILENAME = f"nastran/0.5x2_cyl_E=1e5_nu=0.49/stretching/deformed_F=20000.csv"
+NASTRAN_UNDEFORMED_CSV_FILENAME = f"nastran/0.5x2_cyl_E=1e5_nu=0.49/stretching/undeformed.csv"
 NASTRAN_DISPLACEMENTS_CSV_FILENAME = f"nastran/1x0.5_block_E=1e5_nu={NU}/bending/displacements.csv"
-SOLVED_ROD_FOLDER = f"cxx/output/1x0.5x2_N=20_E=1e5_nu={NU}/"
+SOLVED_ROD_FOLDER = f"cxx/output/0.5x2cyl_N=21_E=1e5_nu={NU}/"
+# SOLVED_ROD_FILENAMES = [
+#     # "Rod_N=20_F=(0,500,0).txt",
+#     "RodCSDLin_NoBendingCorrection_N=20_F=(0,500,0).txt",
+#     "RodCSDLin_N=20_F=(0,500,0).txt", 
+#     "RodCSD_N=20_F=(0,500,0).txt", 
+#     "RodCSDLinModes_N=20_F=(0,500,0).txt"]
 SOLVED_ROD_FILENAMES = [
-    # "Rod_N=20_F=(0,500,0).txt",
-    "RodCSDLin_NoBendingCorrection_N=20_F=(0,500,0).txt",
-    "RodCSDLin_N=20_F=(0,500,0).txt", 
-    "RodCSD_N=20_F=(0,500,0).txt", 
-    "RodCSDLinModes_N=20_F=(0,500,0).txt"]
+    "Rod_N=21_F=(0,0,-15000).txt",
+    "Rod_N=21_F=(0,0,-5000).txt",
+    "Rod_N=21_F=(0,0,20000).txt",
+    "Rod_N=21_F=(0,0,50000).txt"
+]
 
 def plotModels(deformed_rods, undeformed_index=0):
     plotter = pv.Plotter()
@@ -164,10 +171,10 @@ def plotCrossSections(deformed_rods, undeformed_fem_mesh, deformed_fem_meshes):
 
 def main():
     undeformed_fem_mesh = tm.load_mesh(NASTRAN_UNDEFORMED_STL_FILENAME)
-    deformed_fem_mesh = tm.load_mesh(NASTRAN_DEFORMED_STL_FILENAME)
+    # deformed_fem_mesh = tm.load_mesh(NASTRAN_DEFORMED_STL_FILENAME)
 
-    undeformed_fem_nodes, deformed_fem_nodes = utils.getNodesNastran(NASTRAN_UNDEFORMED_CSV_FILENAME, NASTRAN_DISPLACEMENTS_CSV_FILENAME)
-    # deformed_fem_mesh = utils.getDeformedMeshFromNastranData(undeformed_fem_mesh, NASTRAN_UNDEFORMED_CSV_FILENAME, NASTRAN_DEFORMED_FILENAME)
+    # undeformed_fem_nodes, deformed_fem_nodes = utils.getNodesNastran(NASTRAN_UNDEFORMED_CSV_FILENAME, NASTRAN_DISPLACEMENTS_CSV_FILENAME)
+    deformed_fem_mesh = utils.getDeformedMeshFromNastranData(undeformed_fem_mesh, NASTRAN_UNDEFORMED_CSV_FILENAME, NASTRAN_DEFORMED_FILENAME)
 
     undeformed_rods = []
     deformed_rods = []
@@ -175,13 +182,14 @@ def main():
         print(f"\n{filename}")
         undeformed_rod, deformed_rod = utils.loadRodFromFile(SOLVED_ROD_FOLDER+filename)
         
-        mesh.meshRodVertexError(undeformed_fem_nodes, deformed_fem_nodes, undeformed_rod, deformed_rod)
+        # mesh.meshRodVertexError(undeformed_fem_nodes, deformed_fem_nodes, undeformed_rod, deformed_rod)
+        mesh.meshRodVertexError(undeformed_fem_mesh.vertices, deformed_fem_mesh.vertices, undeformed_rod, deformed_rod)
         
         undeformed_rods.append(undeformed_rod)
         deformed_rods.append(deformed_rod)
     
-    # plotModelFEM(deformed_rods[::-1], undeformed_fem_mesh, [deformed_fem_mesh])
-    plotCrossSections(deformed_rods, undeformed_fem_mesh, [deformed_fem_mesh])
+    plotModelFEM(deformed_rods[::-1], undeformed_fem_mesh, [deformed_fem_mesh])
+    # plotCrossSections(deformed_rods, undeformed_fem_mesh, [deformed_fem_mesh])
 
 if __name__ == "__main__":
     main()

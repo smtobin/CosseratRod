@@ -74,13 +74,13 @@ std::vector<typename PeristalticBendingRobot<N>::State> PeristalticBendingRobotG
         Real max_pressure = 0;
         for (int a = 0; a < _robot->numActuators(); a++)
         {
-            if (_actuator_pressures[a][step].maxCoeff() > max_pressure)
-                max_pressure = _actuator_pressures[a][step].maxCoeff();
+            if (_actuator_pressures[a][step].mean() > max_pressure)
+                max_pressure = _actuator_pressures[a][step].mean();
         }
         // fix an actuator if it has the max pressure
         for (int a = 0; a < _robot->numActuators(); a++)
         {
-            if (_actuator_pressures[a][step].maxCoeff() == max_pressure && max_pressure > 100e3)
+            if (_actuator_pressures[a][step].mean() == max_pressure && max_pressure >= 100e3)
             {
                 nl[6*a] = 0; nl[6*a+1] = 0; nl[6*a+2] = 0; nl[6*a+3] = 0; nl[6*a+4] = 0; nl[6*a+5] = 0;
                 nu[6*a] = 0; nu[6*a+1] = 0; nu[6*a+2] = 0; nu[6*a+3] = 0; nu[6*a+4] = 0; nu[6*a+5] = 0;
